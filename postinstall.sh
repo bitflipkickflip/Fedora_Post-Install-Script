@@ -131,27 +131,23 @@ if [ "$jagex_choice" == "1" ]; then
     # +x: Adds execute permissions so the AppImage can be run directly as an executable.
     chmod +x "$BIN_DIR/jagex-launcher.AppImage"
     
-    echo "Launching Jagex Launcher briefly to auto-register its menu entry and icon..."
+echo "Launching Jagex Launcher briefly to auto-register its menu entry and icon..."
     
-    # Run the AppImage in the background (&) so the script doesn't freeze waiting for it
+    # Run the AppImage in the background
     "$BIN_DIR/jagex-launcher.AppImage" >/dev/null 2>&1 &
-    
-    # Capture the Process ID (PID) of the background command
     LAUNCHER_PID=$!
     
-    # Pause for 4 seconds to give the launcher enough time to unpack and write its desktop/icon files
-    sleep 3
+    # Give it 6 seconds to fully unpack and register its desktop/icon assets
+    sleep 6
     
-    # Terminate the process cleanly using its captured PID
+    # Send a graceful termination signal (SIGTERM / default kill) 
+    # This tells the app to exit cleanly without triggering crash flags
     kill "$LAUNCHER_PID" 2>/dev/null
     
-    # pkill options used:
-    # -f: Matches against the full command line string to catch any lingering child processes.
-    # Ensures no background Jagex daemons stay stuck open after registration.
-    pkill -f "jagex-launcher.AppImage" 2>/dev/null
+    # Wait up to 3 seconds for it to wind down gracefully
+    wait "$LAUNCHER_PID" 2>/dev/null
     
-    echo "Jagex Launcher registered and closed successfully."
-else
+    echo "Jagex Launcher registered and closed successfully."else
     echo "Skipping Jagex Launcher installation."
 fi
 
