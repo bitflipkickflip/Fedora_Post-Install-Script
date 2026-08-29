@@ -116,10 +116,12 @@ if [ "$jagex_choice" == "1" ]; then
     echo "Downloading Jagex Launcher..."
     
     BIN_DIR="$HOME/.local/bin"
+    APP_DIR="$HOME/.local/share/applications"
     
     # mkdir options used:
     # -p: Creates parent directories as needed, and does not fail if the directory already exists.
     mkdir -p "$BIN_DIR"
+    mkdir -p "$APP_DIR"
     
     # curl options used:
     # -L: Follows HTTP redirects.
@@ -130,7 +132,19 @@ if [ "$jagex_choice" == "1" ]; then
     # +x: Adds execute permissions so the AppImage can be run directly as an executable.
     chmod +x "$BIN_DIR/jagex-launcher.AppImage"
     
-    echo "Jagex Launcher installed to $BIN_DIR/jagex-launcher.AppImage"
+    # Register in the KDE application menu using absolute $HOME pathing
+    cat << EOF > "$APP_DIR/jagex-launcher.desktop"
+[Desktop Entry]
+Type=Application
+Name=Jagex Launcher
+Comment=Official launcher for RuneScape and Old School RuneScape
+Exec=$HOME/.local/bin/jagex-launcher.AppImage
+Icon=utilities-terminal
+Terminal=false
+Categories=Game;
+EOF
+
+    echo "Jagex Launcher installed and registered to the application menu."
 else
     echo "Skipping Jagex Launcher installation."
 fi
