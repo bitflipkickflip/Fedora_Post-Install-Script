@@ -43,7 +43,7 @@ qdbus-qt6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript "
     }
 "
 
-# Apply the wallpaper to the Lockscreen
+# Apply the wallpaper to the Lockscreen as well
 # kwriteconfig6 options used:
 # --file: Specifies the target configuration file.
 # --group: Navigates down into nested configuration groups.
@@ -105,7 +105,33 @@ fi
 
 
 # ==========================================
-# 4. Jagex Launcher AppImage Installation
+# 4. Discord Installation Section
+# ==========================================
+
+echo ""
+echo "Would you like to install Discord?"
+echo "1) Yes"
+echo "2) No"
+read -p "Enter 1 or 2: " discord_choice </dev/tty
+
+if [ "$discord_choice" == "1" ]; then
+    echo "Enabling RPM Fusion Nonfree Updates repository and installing Discord..."
+    
+    # dnf options used:
+    # config-manager setopt: Enables the specific rpmfusion-nonfree-updates repository.
+    # install: Installs the discord package.
+    # -y: Automatically answers 'yes' to any confirmation prompts.
+    sudo dnf config-manager setopt rpmfusion-nonfree-updates.enabled=1
+    sudo dnf install -y discord
+    
+    echo "Discord installed successfully."
+else
+    echo "Skipping Discord installation."
+fi
+
+
+# ==========================================
+# 5. Jagex Launcher AppImage Installation
 # ==========================================
 
 echo ""
@@ -141,7 +167,7 @@ if [ "$jagex_choice" == "1" ]; then
     LAUNCHER_PID=$!
     
     # Pause for 4 seconds to give the launcher enough time to unpack its icon and metadata assets
-    sleep 3
+    sleep 4
     
     # Send a graceful termination signal (SIGTERM) so it closes cleanly without crash dialogs
     kill "$LAUNCHER_PID" 2>/dev/null
@@ -156,7 +182,7 @@ fi
 
 
 # ==========================================
-# 5. System-Wide Upgrade Section
+# 6. System-Wide Upgrade Section
 # ==========================================
 
 echo ""
@@ -180,7 +206,7 @@ fi
 
 
 # ==========================================
-# 6. System Restart Section
+# 7. System Restart Section
 # ==========================================
 
 echo ""
@@ -199,6 +225,9 @@ if [ "$reboot_choice" == "1" ]; then
     done
     
     echo "All background tasks finished. Initiating system reboot..."
+    
+    # reboot options used:
+    # sudo: Runs the reboot command with superuser privileges required to restart the OS.
     sudo reboot
 else
     echo ""
