@@ -163,6 +163,7 @@ echo "Performing final system-wide upgrade to ensure all packages and drivers ar
 # dnf: Invokes the Fedora package manager.
 # upgrade: Upgrades all installed packages on the system to their latest available versions.
 # -y: Automatically answers 'yes' to any confirmation prompts during the upgrade process.
+steam & 
 sudo dnf upgrade -y
 
 echo ""
