@@ -71,6 +71,7 @@ if [ "$steam_choice" == "1" ]; then
     sudo dnf install -y fedora-workstation-repositories
     sudo dnf config-manager setopt rpmfusion-nonfree-steam.enabled=1
     sudo dnf install -y steam
+    steam & 
 else
     echo "Skipping Steam installation."
 fi
@@ -163,7 +164,7 @@ echo "Performing final system-wide upgrade to ensure all packages and drivers ar
 # dnf: Invokes the Fedora package manager.
 # upgrade: Upgrades all installed packages on the system to their latest available versions.
 # -y: Automatically answers 'yes' to any confirmation prompts during the upgrade process.
-steam & 
+
 sudo dnf upgrade -y
 
 echo ""
