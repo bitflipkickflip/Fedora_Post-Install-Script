@@ -158,7 +158,7 @@ fi
 # ==========================================
 
 echo ""
-echo "Would you like to perform a full system-wide upgrade?"
+echo "Would you like to perform a full system-wide upgrade? (HIGHLY RECOMMENDED)"
 echo "1) Yes"
 echo "2) No"
 read -p "Enter 1 or 2: " upgrade_choice </dev/tty
