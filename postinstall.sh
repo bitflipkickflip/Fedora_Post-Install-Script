@@ -100,3 +100,61 @@ if [ "$nvidia_choice" == "1" ]; then
 else
     echo "Skipping NVIDIA driver installation."
 fi
+
+
+# ==========================================
+# 4. Jagex Launcher AppImage Installation
+# ==========================================
+
+echo ""
+echo "Would you like to download and install the Jagex Launcher AppImage?"
+echo "1) Yes"
+echo "2) No"
+read -p "Enter 1 or 2: " jagex_choice </dev/tty
+
+if [ "$jagex_choice" == "1" ]; then
+    echo "Downloading Jagex Launcher..."
+    
+    BIN_DIR="$HOME/.local/bin"
+    
+    # mkdir options used:
+    # -p: Creates parent directories as needed, and does not fail if the directory already exists.
+    mkdir -p "$BIN_DIR"
+    
+    # curl options used:
+    # -L: Follows HTTP redirects.
+    # -o: Writes output to the destination file path.
+    curl -L -o "$BIN_DIR/jagex-launcher.AppImage" "https://rs-launcher-updates.runescape.com/production/linux/x64/latest/jagex-launcher-beta-linux-x86_64.AppImage"
+    
+    # chmod options used:
+    # +x: Adds execute permissions so the AppImage can be run directly as an executable.
+    chmod +x "$BIN_DIR/jagex-launcher.AppImage"
+    
+    echo "Jagex Launcher installed to $BIN_DIR/jagex-launcher.AppImage"
+else
+    echo "Skipping Jagex Launcher installation."
+fi
+
+
+# ==========================================
+# 5. Launch Applications Independently
+# ==========================================
+
+echo ""
+echo "Launching installed applications..."
+
+# Launch Steam if it was chosen for installation
+if [ "$steam_choice" == "1" ]; then
+    # Detached execution tools used:
+    # nohup: Prevents the process from receiving the SIGHUP (hangup) signal when the terminal closes.
+    # >/dev/null 2>&1: Discards all standard output and standard error streams so they don't clog the terminal.
+    # &: Runs the command asynchronously in the background.
+    nohup steam >/dev/null 2>&1 &
+fi
+
+# Launch Jagex Launcher if it was chosen for installation
+if [ "$jagex_choice" == "1" ]; then
+    nohup "$HOME/.local/bin/jagex-launcher.AppImage" >/dev/null 2>&1 &
+fi
+
+echo "Setup complete! You can now safely close this terminal window."
