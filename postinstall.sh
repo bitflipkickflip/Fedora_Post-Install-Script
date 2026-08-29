@@ -135,26 +135,5 @@ else
     echo "Skipping Jagex Launcher installation."
 fi
 
-
-# ==========================================
-# 5. Launch Applications Independently
-# ==========================================
-
 echo ""
-echo "Launching installed applications..."
-
-# Launch Steam if it was chosen for installation
-if [ "$steam_choice" == "1" ]; then
-    # Detached execution tools used:
-    # nohup: Prevents the process from receiving the SIGHUP (hangup) signal when the terminal closes.
-    # >/dev/null 2>&1: Discards all standard output and standard error streams so they don't clog the terminal.
-    # &: Runs the command asynchronously in the background.
-    nohup steam >/dev/null 2>&1 &
-fi
-
-# Launch Jagex Launcher if it was chosen for installation
-if [ "$jagex_choice" == "1" ]; then
-    nohup "$HOME/.local/bin/jagex-launcher.AppImage" >/dev/null 2>&1 &
-fi
-
-echo "Setup complete! You can now safely close this terminal window."
+echo "Setup complete! Please remember to reboot your system if you installed NVIDIA drivers."
