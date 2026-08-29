@@ -116,12 +116,10 @@ if [ "$jagex_choice" == "1" ]; then
     echo "Downloading Jagex Launcher..."
     
     BIN_DIR="$HOME/.local/bin"
-    APP_DIR="$HOME/.local/share/applications"
     
     # mkdir options used:
     # -p: Creates parent directories as needed, and does not fail if the directory already exists.
     mkdir -p "$BIN_DIR"
-    mkdir -p "$APP_DIR"
     
     # curl options used:
     # -L: Follows HTTP redirects.
@@ -132,19 +130,26 @@ if [ "$jagex_choice" == "1" ]; then
     # +x: Adds execute permissions so the AppImage can be run directly as an executable.
     chmod +x "$BIN_DIR/jagex-launcher.AppImage"
     
-    # Register in the KDE application menu using absolute $HOME pathing
-    cat << EOF > "$APP_DIR/jagex-launcher.desktop"
-[Desktop Entry]
-Type=Application
-Name=Jagex Launcher
-Comment=Official launcher for RuneScape and Old School RuneScape
-Exec=$HOME/.local/bin/jagex-launcher.AppImage
-Icon=utilities-terminal
-Terminal=false
-Categories=Game;
-EOF
-
-    echo "Jagex Launcher installed and registered to the application menu."
+    echo "Launching Jagex Launcher briefly to auto-register its menu entry and icon..."
+    
+    # Run the AppImage in the background (&) so the script doesn't freeze waiting for it
+    "$BIN_DIR/jagex-launcher.AppImage" >/dev/null 2>&1 &
+    
+    # Capture the Process ID (PID) of the background command
+    LAUNCHER_PID=$!
+    
+    # Pause for 4 seconds to give the launcher enough time to unpack and write its desktop/icon files
+    sleep 4
+    
+    # Terminate the process cleanly using its captured PID
+    kill "$LAUNCHER_PID" 2>/dev/null
+    
+    # pkill options used:
+    # -f: Matches against the full command line string to catch any lingering child processes.
+    # Ensures no background Jagex daemons stay stuck open after registration.
+    pkill -f "jagex-launcher.AppImage" 2>/dev/null
+    
+    echo "Jagex Launcher registered and closed successfully."
 else
     echo "Skipping Jagex Launcher installation."
 fi
