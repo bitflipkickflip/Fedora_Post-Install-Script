@@ -48,3 +48,27 @@ qdbus-qt6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript "
 # --group: Navigates down into nested configuration groups.
 # --key: Specifies the exact configuration key to update with the file path value.
 kwriteconfig6 --file kscreenlockerrc --group Greeter --group Wallpaper --group org.kde.image --group General --key Image "file://$WALLPAPER_PATH"
+
+# ==========================================
+# 2. Steam Installation Section
+# ==========================================
+
+echo ""
+echo "Would you like to install Steam?"
+echo "1) Yes"
+echo "2) No"
+read -p "Enter 1 or 2: " steam_choice </dev/tty
+
+if [ "$steam_choice" == "1" ]; then
+    echo "Enabling RPM Fusion Steam repository and installing Steam..."
+    
+    # dnf options used:
+    # dnf: Fedora's package manager.
+    # config-manager: Used to manage DNF configuration files and repositories.
+    # --enable: Enables the specified repository.
+    # -y: Automatically answers 'yes' to any confirmation prompts during installation.
+    sudo dnf config-manager --enable rpmfusion-nonfree-steam
+    sudo dnf install -y steam
+else
+    echo "Skipping Steam installation."
+fi
