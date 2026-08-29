@@ -71,6 +71,10 @@ if [ "$steam_choice" == "1" ]; then
     sudo dnf install -y fedora-workstation-repositories
     sudo dnf config-manager setopt rpmfusion-nonfree-steam.enabled=1
     sudo dnf install -y steam
+    
+    echo "Launching Steam in the background to handle initial updates..."
+    # Launch Steam detached so it downloads runtimes while the script proceeds
+    steam >/dev/null 2>&1 &
 else
     echo "Skipping Steam installation."
 fi
@@ -138,7 +142,7 @@ if [ "$jagex_choice" == "1" ]; then
     # Capture the Process ID (PID) of the background command
     LAUNCHER_PID=$!
     
-    # Pause for 6 seconds to give the launcher enough time to unpack its icon and metadata assets
+    # Pause for 4 seconds to give the launcher enough time to unpack its icon and metadata assets
     sleep 4
     
     # Send a graceful termination signal (SIGTERM) so it closes cleanly without crash dialogs
