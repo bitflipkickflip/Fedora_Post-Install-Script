@@ -115,16 +115,19 @@ echo "2) No"
 read -p "Enter 1 or 2: " discord_choice </dev/tty
 
 if [ "$discord_choice" == "1" ]; then
-    echo "Enabling RPM Fusion Nonfree Updates repository and installing Discord..."
+    echo "Enabling RPM Fusion Nonfree repository and installing Discord..."
     
     # dnf options used:
-    # config-manager setopt: Enables the specific rpmfusion-nonfree-updates repository.
+    # config-manager setopt: Enables the main rpmfusion-nonfree repository.
     # install: Installs the discord package.
     # -y: Automatically answers 'yes' to any confirmation prompts.
-    sudo dnf config-manager setopt rpmfusion-nonfree-updates.enabled=1
-    sudo dnf install -y discord
+    sudo dnf config-manager setopt rpmfusion-nonfree.enabled=1
     
-    echo "Discord installed successfully."
+    if sudo dnf install -y discord; then
+        echo "Discord installed successfully."
+    else
+        echo "Error: Discord installation failed."
+    fi
 else
     echo "Skipping Discord installation."
 fi
