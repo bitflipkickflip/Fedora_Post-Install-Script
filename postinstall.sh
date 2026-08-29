@@ -72,9 +72,7 @@ if [ "$steam_choice" == "1" ]; then
     sudo dnf config-manager setopt rpmfusion-nonfree-steam.enabled=1
     sudo dnf install -y steam
     
-    echo "Launching Steam in the background to handle initial updates..."
-    # Launch Steam detached so it downloads runtimes while the script proceeds
-    steam >/dev/null 2>&1 &
+    echo "Steam installed successfully. You can launch it from your app menu after rebooting."
 else
     echo "Skipping Steam installation."
 fi
