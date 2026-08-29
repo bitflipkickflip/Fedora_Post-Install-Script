@@ -71,7 +71,6 @@ if [ "$steam_choice" == "1" ]; then
     sudo dnf install -y fedora-workstation-repositories
     sudo dnf config-manager setopt rpmfusion-nonfree-steam.enabled=1
     sudo dnf install -y steam
-    steam & 
 else
     echo "Skipping Steam installation."
 fi
@@ -131,37 +130,51 @@ if [ "$jagex_choice" == "1" ]; then
     # +x: Adds execute permissions so the AppImage can be run directly as an executable.
     chmod +x "$BIN_DIR/jagex-launcher.AppImage"
     
-echo "Launching Jagex Launcher briefly to auto-register its menu entry and icon..."
+    echo "Launching Jagex Launcher briefly to auto-register its menu entry and icon..."
     
-    # Run the AppImage in the background
+    # Run the AppImage in the background (&) so the script doesn't freeze waiting for it
     "$BIN_DIR/jagex-launcher.AppImage" >/dev/null 2>&1 &
+    
+    # Capture the Process ID (PID) of the background command
     LAUNCHER_PID=$!
     
-    # Give it 6 seconds to fully unpack and register its desktop/icon assets
+    # Pause for 6 seconds to give the launcher enough time to unpack its icon and metadata assets
     sleep 6
     
-    # Send a graceful termination signal (SIGTERM / default kill) 
-    # This tells the app to exit cleanly without triggering crash flags
+    # Send a graceful termination signal (SIGTERM) so it closes cleanly without crash dialogs
     kill "$LAUNCHER_PID" 2>/dev/null
     
-    # Wait up to 3 seconds for it to wind down gracefully
+    # Wait for the process to wind down completely
     wait "$LAUNCHER_PID" 2>/dev/null
     
-    echo "Jagex Launcher registered and closed successfully."else
+    echo "Jagex Launcher registered and closed successfully."
+else
     echo "Skipping Jagex Launcher installation."
 fi
 
-### STEP 5 ### 
+
+# ==========================================
+# 5. System-Wide Upgrade Section
+# ==========================================
+
 echo ""
-echo "Performing final system-wide upgrade to ensure all packages and drivers are synced..."
+echo "Would you like to perform a full system-wide upgrade?"
+echo "1) Yes"
+echo "2) No"
+read -p "Enter 1 or 2: " upgrade_choice </dev/tty
 
-# dnf upgrade options used:
-# sudo: Executes the command with administrative (root) privileges required for system changes.
-# dnf: Invokes the Fedora package manager.
-# upgrade: Upgrades all installed packages on the system to their latest available versions.
-# -y: Automatically answers 'yes' to any confirmation prompts during the upgrade process.
-
-sudo dnf upgrade -y
+if [ "$upgrade_choice" == "1" ]; then
+    echo "Performing system-wide package upgrade..."
+    
+    # dnf upgrade options used:
+    # upgrade: Upgrades all installed system packages to their newest available versions.
+    # -y: Automatically answers 'yes' to confirmation prompts.
+    sudo dnf upgrade -y
+    
+    echo "System upgrade complete."
+else
+    echo "Skipping system-wide upgrade."
+fi
 
 echo ""
 echo "Setup complete! Please remember to reboot your system if you installed NVIDIA drivers."
