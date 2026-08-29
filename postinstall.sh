@@ -115,13 +115,12 @@ echo "2) No"
 read -p "Enter 1 or 2: " discord_choice </dev/tty
 
 if [ "$discord_choice" == "1" ]; then
-    echo "Enabling RPM Fusion Nonfree repository and installing Discord..."
+    echo "Installing RPM Fusion Nonfree repository and Discord..."
     
     # dnf options used:
-    # config-manager setopt: Enables the main rpmfusion-nonfree repository.
-    # install: Installs the discord package.
+    # install: Installs the RPM Fusion nonfree release package and the discord package.
     # -y: Automatically answers 'yes' to any confirmation prompts.
-    sudo dnf config-manager setopt rpmfusion-nonfree.enabled=1
+    sudo dnf install -y https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
     
     if sudo dnf install -y discord; then
         echo "Discord installed successfully."
@@ -131,7 +130,6 @@ if [ "$discord_choice" == "1" ]; then
 else
     echo "Skipping Discord installation."
 fi
-
 
 # ==========================================
 # 5. Jagex Launcher AppImage Installation
