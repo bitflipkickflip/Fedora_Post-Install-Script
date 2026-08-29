@@ -154,5 +154,16 @@ else
     echo "Skipping Jagex Launcher installation."
 fi
 
+### STEP 5 ### 
+echo ""
+echo "Performing final system-wide upgrade to ensure all packages and drivers are synced..."
+
+# dnf upgrade options used:
+# sudo: Executes the command with administrative (root) privileges required for system changes.
+# dnf: Invokes the Fedora package manager.
+# upgrade: Upgrades all installed packages on the system to their latest available versions.
+# -y: Automatically answers 'yes' to any confirmation prompts during the upgrade process.
+sudo dnf upgrade -y
+
 echo ""
 echo "Setup complete! Please remember to reboot your system if you installed NVIDIA drivers."
