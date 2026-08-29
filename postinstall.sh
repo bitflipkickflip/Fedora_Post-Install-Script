@@ -139,7 +139,7 @@ if [ "$jagex_choice" == "1" ]; then
     LAUNCHER_PID=$!
     
     # Pause for 6 seconds to give the launcher enough time to unpack its icon and metadata assets
-    sleep 6
+    sleep 4
     
     # Send a graceful termination signal (SIGTERM) so it closes cleanly without crash dialogs
     kill "$LAUNCHER_PID" 2>/dev/null
