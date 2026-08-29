@@ -4,3 +4,4 @@
 curl -sO https://raw.githubusercontent.com/bitflipkickflip/fedora_postinstall/main/postinstall.sh && bash postinstall.sh
 ```
 * Vibe coded with~~out~~ love
+* First time launching steam will take a minute due to some valve runtime stuff. Just be patient.
