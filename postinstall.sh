@@ -4,7 +4,7 @@
 echo "Which monitor resolution do you need?"
 echo "1) 2560x1440 (Standard 1440p)"
 echo "2) 3440x1440 (Ultrawide 1440p)"
-read -p "Enter 1 or 2: " choice
+read -p "Enter 1 or 2: " choice </dev/tty
 
 # 2. Set the URL and filename based on the choice
 if [ "$choice" == "1" ]; then
