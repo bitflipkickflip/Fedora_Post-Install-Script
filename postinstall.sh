@@ -20,12 +20,19 @@ fi
 
 # 3. Create the KDE wallpapers directory and download the image
 WALLPAPER_DIR="$HOME/.local/share/wallpapers"
+
+# mkdir options used:
+# -p: Creates parent directories as needed, and does not fail if the directory already exists.
 mkdir -p "$WALLPAPER_DIR"
+
+# curl options used:
+# -L: Follows HTTP redirects (crucial for GitHub raw or blob links).
+# -o: Writes output to a specified local file instead of stdout.
 curl -L -o "$WALLPAPER_DIR/$FILENAME" "$URL"
 WALLPAPER_PATH="$WALLPAPER_DIR/$FILENAME"
 
-# 4. Apply the wallpaper to the Plasma Desktop
-qdbus org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript "
+# 4. Apply the wallpaper to the Plasma Desktop (Using qdbus-qt6 for Plasma 6)
+qdbus-qt6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript "
     var allDesktops = desktops();
     for (i=0;i<allDesktops.length;i++) {
         d = allDesktops[i];
@@ -36,4 +43,8 @@ qdbus org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript "
 "
 
 # 5. Apply the wallpaper to the Lockscreen
+# kwriteconfig6 options used:
+# --file: Specifies the target configuration file.
+# --group: Navigates down into nested configuration groups.
+# --key: Specifies the exact configuration key to update with the file path value.
 kwriteconfig6 --file kscreenlockerrc --group Greeter --group Wallpaper --group org.kde.image --group General --key Image "file://$WALLPAPER_PATH"
