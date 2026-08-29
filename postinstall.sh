@@ -1,12 +1,14 @@
 #!/bin/bash
 
-# 1. Prompt the user for their resolution
+# ==========================================
+# 1. Wallpaper Setup Section (Runs as User)
+# ==========================================
+
 echo "Which monitor resolution do you need?"
 echo "1) 2560x1440 (Standard 1440p)"
 echo "2) 3440x1440 (Ultrawide 1440p)"
 read -p "Enter 1 or 2: " choice </dev/tty
 
-# 2. Set the URL and filename based on the choice
 if [ "$choice" == "1" ]; then
     URL="https://github.com/bitflipkickflip/fedora_postinstall/blob/main/wallpapers/Fedora_GrayBlue_Penguin_2560_1440.png?raw=true"
     FILENAME="Fedora_GrayBlue_Penguin_2560_1440.png"
@@ -18,7 +20,6 @@ else
     exit 1
 fi
 
-# 3. Create the KDE wallpapers directory and download the image
 WALLPAPER_DIR="$HOME/.local/share/wallpapers"
 
 # mkdir options used:
@@ -31,7 +32,7 @@ mkdir -p "$WALLPAPER_DIR"
 curl -L -o "$WALLPAPER_DIR/$FILENAME" "$URL"
 WALLPAPER_PATH="$WALLPAPER_DIR/$FILENAME"
 
-# 4. Apply the wallpaper to the Plasma Desktop (Using qdbus-qt6 for Plasma 6)
+# Apply the wallpaper to the Plasma Desktop
 qdbus-qt6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript "
     var allDesktops = desktops();
     for (i=0;i<allDesktops.length;i++) {
@@ -42,12 +43,13 @@ qdbus-qt6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript "
     }
 "
 
-# 5. Apply the wallpaper to the Lockscreen
+# Apply the wallpaper to the Lockscreen
 # kwriteconfig6 options used:
 # --file: Specifies the target configuration file.
 # --group: Navigates down into nested configuration groups.
 # --key: Specifies the exact configuration key to update with the file path value.
 kwriteconfig6 --file kscreenlockerrc --group Greeter --group Wallpaper --group org.kde.image --group General --key Image "file://$WALLPAPER_PATH"
+
 
 # ==========================================
 # 2. Steam Installation Section
@@ -62,18 +64,17 @@ read -p "Enter 1 or 2: " steam_choice </dev/tty
 if [ "$steam_choice" == "1" ]; then
     echo "Enabling Fedora's third-party repositories and installing Steam..."
     
-    # 1. Install Fedora's third-party repository package (this provides the Steam repo toggle)
+    # dnf options used:
+    # install: Installs the specified package.
+    # -y: Automatically answers 'yes' to any confirmation prompts during installation.
+    # config-manager setopt: Updates repository configuration parameters on modern DNF5 systems.
     sudo dnf install -y fedora-workstation-repositories
-
-    # 2. Enable the specific Steam repository
-    sudo dnf config-manager setopt fedora-cisco-openh264.enabled=0 # (optional safety to keep cisco untouched)
     sudo dnf config-manager setopt rpmfusion-nonfree-steam.enabled=1
-
-    # 3. Install Steam
     sudo dnf install -y steam
 else
     echo "Skipping Steam installation."
 fi
+
 
 # ==========================================
 # 3. NVIDIA Drivers Installation Section
