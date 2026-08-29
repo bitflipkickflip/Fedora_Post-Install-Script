@@ -74,3 +74,28 @@ if [ "$steam_choice" == "1" ]; then
 else
     echo "Skipping Steam installation."
 fi
+
+# ==========================================
+# 3. NVIDIA Drivers Installation Section
+# ==========================================
+
+echo ""
+echo "Would you like to install the latest NVIDIA drivers?"
+echo "1) Yes"
+echo "2) No"
+read -p "Enter 1 or 2: " nvidia_choice </dev/tty
+
+if [ "$nvidia_choice" == "1" ]; then
+    echo "Enabling RPM Fusion NVIDIA repository and installing drivers..."
+    
+    # dnf options used:
+    # config-manager setopt: Updates repository configuration parameters on modern DNF5 systems.
+    # install: Installs the specified packages (akmod-nvidia builds kernel modules, cuda adds support libraries).
+    # -y: Automatically answers 'yes' to any confirmation prompts during installation.
+    sudo dnf config-manager setopt rpmfusion-nonfree-nvidia-driver.enabled=1
+    sudo dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda
+    
+    echo "NVIDIA drivers installed successfully. Please reboot your system after the script completes."
+else
+    echo "Skipping NVIDIA driver installation."
+fi
