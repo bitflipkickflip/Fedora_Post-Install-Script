@@ -60,12 +60,16 @@ echo "2) No"
 read -p "Enter 1 or 2: " steam_choice </dev/tty
 
 if [ "$steam_choice" == "1" ]; then
-    echo "Enabling RPM Fusion Steam repository and installing Steam..."
+    echo "Enabling RPM Fusion repositories and installing Steam..."
     
-    # dnf5-compatible options used:
-    # config-manager setopt: Updates repository configuration parameters on modern DNF5 systems.
-    # -y: Automatically answers 'yes' to any confirmation prompts during installation.
+    # 1. Install RPM Fusion Free and Nonfree repositories first (required on fresh/live environments)
+    sudo dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm \
+                        https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+
+    # 2. Enable the specialized Steam repo using DNF5 syntax
     sudo dnf config-manager setopt rpmfusion-nonfree-steam.enabled=1
+
+    # 3. Install Steam
     sudo dnf install -y steam
 else
     echo "Skipping Steam installation."
