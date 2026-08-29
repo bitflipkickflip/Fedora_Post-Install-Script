@@ -192,10 +192,15 @@ echo "2) No"
 read -p "Enter 1 or 2: " reboot_choice </dev/tty
 
 if [ "$reboot_choice" == "1" ]; then
-    echo "Initiating system reboot..."
+    echo "Checking for active package updates or driver compilations..."
     
-    # reboot options used:
-    # sudo: Runs the reboot command with superuser privileges required to restart the OS.
+    # Loop as long as dnf or akmods processes are still running in the background
+    while pgrep -x "dnf" >/dev/null || pgrep -x "akmods" >/dev/null; do
+        echo "Background tasks still running (building NVIDIA modules or updating). Waiting 5 seconds..."
+        sleep 5
+    done
+    
+    echo "All background tasks finished. Initiating system reboot..."
     sudo reboot
 else
     echo ""
