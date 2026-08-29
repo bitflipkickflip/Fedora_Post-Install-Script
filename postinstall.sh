@@ -158,7 +158,7 @@ fi
 # ==========================================
 
 echo ""
-echo "Would you like to perform a full system-wide upgrade? (HIGHLY RECOMMENDED)"
+echo "Would you like to perform a full system-wide upgrade?"
 echo "1) Yes"
 echo "2) No"
 read -p "Enter 1 or 2: " upgrade_choice </dev/tty
@@ -176,5 +176,24 @@ else
     echo "Skipping system-wide upgrade."
 fi
 
+
+# ==========================================
+# 6. System Restart Section
+# ==========================================
+
 echo ""
-echo "Setup complete! Please remember to reboot your system if you installed NVIDIA drivers."
+echo "Would you like to restart your system now?"
+echo "1) Yes"
+echo "2) No"
+read -p "Enter 1 or 2: " reboot_choice </dev/tty
+
+if [ "$reboot_choice" == "1" ]; then
+    echo "Initiating system reboot..."
+    
+    # reboot options used:
+    # sudo: Runs the reboot command with superuser privileges required to restart the OS.
+    sudo reboot
+else
+    echo ""
+    echo "Setup complete! Please remember to reboot your system manually if you installed NVIDIA drivers."
+fi
