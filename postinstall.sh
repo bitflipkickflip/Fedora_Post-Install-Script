@@ -220,7 +220,7 @@ else
 fi
 
 
-# ==========================================
+# # ==========================================
 # 7. System-Wide Upgrade Section
 # ==========================================
 
@@ -231,14 +231,16 @@ echo "2) No"
 read -p "Enter 1 or 2: " upgrade_choice </dev/tty
 
 if [ "$upgrade_choice" == "1" ]; then
-    echo "Performing system-wide package upgrade..."
+    echo "Performing system-wide package upgrade and cleaning up orphans..."
     
-    # dnf upgrade options used:
+    # dnf options used:
     # upgrade: Upgrades all installed system packages to their newest available versions.
+    # autoremove: Removes orphaned dependency packages no longer required by any installed software.
     # -y: Automatically answers 'yes' to confirmation prompts.
     sudo dnf upgrade -y
+    sudo dnf autoremove -y
     
-    echo "System upgrade complete."
+    echo "System upgrade and cleanup complete."
 else
     echo "Skipping system-wide upgrade."
 fi
