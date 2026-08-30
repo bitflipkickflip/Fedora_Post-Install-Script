@@ -8,8 +8,8 @@ rm -- "$0"
 # ==========================================
 
 echo "Which monitor resolution do you need?"
-echo "1) 2560x1440 (Standard 1440p)"
-echo "2) 3440x1440 (Ultrawide 1440p)"
+echo "1) 2560x1440 (Standard)"
+echo "2) 3440x1440 (Ultrawide)"
 read -p "Enter 1 or 2: " choice </dev/tty
 
 if [ "$choice" == "1" ]; then
@@ -82,7 +82,39 @@ fi
 
 
 # ==========================================
-# 3. NVIDIA Drivers Installation Section
+# 3. Brave Browser Installation Section
+# ==========================================
+
+echo ""
+echo "Would you like to install Brave Browser?"
+echo "1) Yes"
+echo "2) No"
+read -p "Enter 1 or 2: " brave_choice </dev/tty
+
+if [ "$brave_choice" == "1" ]; then
+    echo "Adding Brave repository and installing Brave Browser..."
+    
+    # dnf options used:
+    # install: Installs the specified package. dnf-plugins-core provides the config-manager tool.
+    # -y: Automatically answers 'yes' to any confirmation prompts during installation.
+    sudo dnf install -y dnf-plugins-core
+    
+    # config-manager addrepo options used:
+    # --from-repofile: Automatically fetches and adds the repository configuration from the specified URL.
+    sudo dnf config-manager addrepo --from-repofile=https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo
+    
+    if sudo dnf install -y brave-browser; then
+        echo "Brave Browser installed successfully."
+    else
+        echo "Error: Brave Browser installation failed."
+    fi
+else
+    echo "Skipping Brave Browser installation."
+fi
+
+
+# ==========================================
+# 4. NVIDIA Drivers Installation Section
 # ==========================================
 
 echo ""
@@ -108,7 +140,7 @@ fi
 
 
 # ==========================================
-# 4. Discord Installation Section
+# 5. Discord Installation Section
 # ==========================================
 
 echo ""
@@ -136,8 +168,9 @@ else
     echo "Skipping Discord installation."
 fi
 
+
 # ==========================================
-# 5. Jagex Launcher AppImage Installation
+# 6. Jagex Launcher AppImage Installation
 # ==========================================
 
 echo ""
@@ -188,7 +221,7 @@ fi
 
 
 # ==========================================
-# 6. System-Wide Upgrade Section
+# 7. System-Wide Upgrade Section
 # ==========================================
 
 echo ""
@@ -212,7 +245,7 @@ fi
 
 
 # ==========================================
-# 7. System Restart Section
+# 8. System Restart Section
 # ==========================================
 
 echo ""
