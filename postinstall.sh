@@ -4,12 +4,12 @@
 rm -- "$0"
 
 # ==========================================
-# 1. Wallpaper Setup Section (Runs as User)
+# 1. Wallpaper & Panel Setup Section (Runs as User)
 # ==========================================
 
 echo "Which monitor resolution do you need?"
-echo "1) 2560x1440 (Standard)"
-echo "2) 3440x1440 (Ultrawide)"
+echo "1) 2560x1440 (Standard 1440p)"
+echo "2) 3440x1440 (Ultrawide 1440p)"
 read -p "Enter 1 or 2: " choice </dev/tty
 
 if [ "$choice" == "1" ]; then
@@ -52,6 +52,18 @@ qdbus-qt6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript "
 # --group: Navigates down into nested configuration groups.
 # --key: Specifies the exact configuration key to update with the file path value.
 kwriteconfig6 --file kscreenlockerrc --group Greeter --group Wallpaper --group org.kde.image --group General --key Image "file://$WALLPAPER_PATH"
+
+echo "Disabling floating panel styling..."
+# Gracefully stop plasmashell to prevent config overwrites in memory
+kquitapp6 plasmashell 2>/dev/null || killall plasmashell 2>/dev/null
+sleep 1
+
+# Force floating=0 for Panels
+kwriteconfig6 --file plasmashellrc --group "PlasmaViews" --group "Panel 1" --key "floating" "0" 2>/dev/null
+kwriteconfig6 --file plasmashellrc --group "PlasmaViews" --group "Panel 2" --key "floating" "0" 2>/dev/null
+
+# Restart plasmashell in the background
+plasmashell >/dev/null 2>&1 &
 
 
 # ==========================================
@@ -114,7 +126,31 @@ fi
 
 
 # ==========================================
-# 4. NVIDIA Drivers Installation Section
+# 4. Firefox Removal Section
+# ==========================================
+
+echo ""
+echo "Would you like to remove Firefox?"
+echo "1) Yes"
+echo "2) No"
+read -p "Enter 1 or 2: " firefox_choice </dev/tty
+
+if [ "$firefox_choice" == "1" ]; then
+    echo "Removing Firefox..."
+    
+    # dnf options used:
+    # remove: Uninstalls the specified package.
+    # -y: Automatically answers 'yes' to confirmation prompts.
+    sudo dnf remove -y firefox
+    
+    echo "Firefox removed successfully."
+else
+    echo "Skipping Firefox removal."
+fi
+
+
+# ==========================================
+# 5. NVIDIA Drivers Installation Section
 # ==========================================
 
 echo ""
@@ -140,7 +176,7 @@ fi
 
 
 # ==========================================
-# 5. Discord Installation Section
+# 6. Discord Installation Section
 # ==========================================
 
 echo ""
@@ -170,7 +206,7 @@ fi
 
 
 # ==========================================
-# 6. Jagex Launcher AppImage Installation
+# 7. Jagex Launcher AppImage Installation
 # ==========================================
 
 echo ""
@@ -220,8 +256,8 @@ else
 fi
 
 
-# # ==========================================
-# 7. System-Wide Upgrade Section
+# ==========================================
+# 8. System-Wide Upgrade Section
 # ==========================================
 
 echo ""
@@ -233,9 +269,9 @@ read -p "Enter 1 or 2: " upgrade_choice </dev/tty
 if [ "$upgrade_choice" == "1" ]; then
     echo "Performing system-wide package upgrade and cleaning up orphans..."
     
-    # dnf options used:
+    # dnf upgrade/autoremove options used:
     # upgrade: Upgrades all installed system packages to their newest available versions.
-    # autoremove: Removes orphaned dependency packages no longer required by any installed software.
+    # autoremove: Cleans up orphaned dependencies no longer needed by any installed applications.
     # -y: Automatically answers 'yes' to confirmation prompts.
     sudo dnf upgrade -y
     sudo dnf autoremove -y
@@ -247,7 +283,7 @@ fi
 
 
 # ==========================================
-# 8. System Restart Section
+# 9. System Restart Section
 # ==========================================
 
 echo ""
