@@ -7,10 +7,11 @@ rm -- "$0"
 # 1. Wallpaper & Panel Setup Section (Runs as User)
 # ==========================================
 
-echo "Which monitor resolution do you need?"
-echo "1) 2560x1440 (Standard 1440p)"
-echo "2) 3440x1440 (Ultrawide 1440p)"
-read -p "Enter 1 or 2: " choice </dev/tty
+echo "Select wallpaper resolution / aspect ratio:"
+echo "1) 2560x1440 (16:9 - Standard 1440p)"
+echo "2) 3440x1440 (21:9 - Ultrawide 1440p)"
+echo "3) Skip wallpaper setup"
+read -p "Enter choice (1-3): " choice </dev/tty
 
 if [ "$choice" == "1" ]; then
     URL="https://github.com/bitflipkickflip/fedora_postinstall/blob/main/wallpapers/Fedora_GrayBlue_Penguin_2560_1440.png?raw=true"
@@ -19,39 +20,42 @@ elif [ "$choice" == "2" ]; then
     URL="https://github.com/bitflipkickflip/fedora_postinstall/blob/main/wallpapers/Fedora_GrayBlue_Penguin_3440_1440.png?raw=true"
     FILENAME="Fedora_GrayBlue_Penguin_3440_1440.png"
 else
-    echo "Invalid choice. Skipping wallpaper setup."
-    exit 1
+    echo "Skipping wallpaper setup."
+    # Skip download/apply variables flag
+    SKIP_WALLPAPER=1
 fi
 
-WALLPAPER_DIR="$HOME/.local/share/wallpapers"
+if [ "$SKIP_WALLPAPER" != "1" ]; then
+    WALLPAPER_DIR="$HOME/.local/share/wallpapers"
 
-# mkdir options used:
-# -p: Creates parent directories as needed, and does not fail if the directory already exists.
-mkdir -p "$WALLPAPER_DIR"
+    # mkdir options used:
+    # -p: Creates parent directories as needed, and does not fail if the directory already exists.
+    mkdir -p "$WALLPAPER_DIR"
 
-# curl options used:
-# -L: Follows HTTP redirects (crucial for GitHub raw or blob links).
-# -o: Writes output to a specified local file instead of stdout.
-curl -L -o "$WALLPAPER_DIR/$FILENAME" "$URL"
-WALLPAPER_PATH="$WALLPAPER_DIR/$FILENAME"
+    # curl options used:
+    # -L: Follows HTTP redirects (crucial for GitHub raw or blob links).
+    # -o: Writes output to a specified local file instead of stdout.
+    curl -L -o "$WALLPAPER_DIR/$FILENAME" "$URL"
+    WALLPAPER_PATH="$WALLPAPER_DIR/$FILENAME"
 
-# Apply the wallpaper to the Plasma Desktop
-qdbus-qt6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript "
-    var allDesktops = desktops();
-    for (i=0;i<allDesktops.length;i++) {
-        d = allDesktops[i];
-        d.wallpaperPlugin = 'org.kde.image';
-        d.currentConfigGroup = Array('Wallpaper', 'org.kde.image', 'General');
-        d.writeConfig('Image', 'file://$WALLPAPER_PATH');
-    }
-"
+    # Apply the wallpaper to the Plasma Desktop
+    qdbus-qt6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript "
+        var allDesktops = desktops();
+        for (i=0;i<allDesktops.length;i++) {
+            d = allDesktops[i];
+            d.wallpaperPlugin = 'org.kde.image';
+            d.currentConfigGroup = Array('Wallpaper', 'org.kde.image', 'General');
+            d.writeConfig('Image', 'file://$WALLPAPER_PATH');
+        }
+    "
 
-# Apply the wallpaper to the Lockscreen as well
-# kwriteconfig6 options used:
-# --file: Specifies the target configuration file.
-# --group: Navigates down into nested configuration groups.
-# --key: Specifies the exact configuration key to update with the file path value.
-kwriteconfig6 --file kscreenlockerrc --group Greeter --group Wallpaper --group org.kde.image --group General --key Image "file://$WALLPAPER_PATH"
+    # Apply the wallpaper to the Lockscreen as well
+    # kwriteconfig6 options used:
+    # --file: Specifies the target configuration file.
+    # --group: Navigates down into nested configuration groups.
+    # --key: Specifies the exact configuration key to update with the file path value.
+    kwriteconfig6 --file kscreenlockerrc --group Greeter --group Wallpaper --group org.kde.image --group General --key Image "file://$WALLPAPER_PATH"
+fi
 
 echo "Disabling floating panel styling..."
 # Gracefully stop plasmashell to prevent config overwrites in memory
