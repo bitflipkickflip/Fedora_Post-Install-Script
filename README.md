@@ -1,4 +1,4 @@
-# fedora_postinstall
+# Fedora_Post-Install-Script
 
 ```bash
 curl -sO https://raw.githubusercontent.com/bitflipkickflip/fedora_postinstall/main/postinstall.sh && bash postinstall.sh
@@ -6,6 +6,6 @@ curl -sO https://raw.githubusercontent.com/bitflipkickflip/fedora_postinstall/ma
 * Automates install of RPM Fusion repos and packages
   * Discord, Steam, Brave, Jagex Launcher, NVIDIA drivers
   * Offers to remove Firefox 
-    * **If you have a .runelite folder from another runelite install put it in ~/.runelite**
+    * **If you have a .runelite folder from another runelite install put it in /home/$USER/.runelite**
 * Vibe coded with ~~love~~ gemini 3.5 flash-lite (free tier slop)
 * First time launching steam will take a minute due to some valve runtime stuff. Just be patient.
