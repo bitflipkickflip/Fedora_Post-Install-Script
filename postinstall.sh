@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# 0. Clean up script
+rm -- "$0"
+
 # ==========================================
 # 1. Wallpaper Setup Section (Runs as User)
 # ==========================================
