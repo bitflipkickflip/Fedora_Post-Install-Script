@@ -158,7 +158,7 @@ if [ "$OPT_KDE_BLOAT" == "true" ]; then
         "elisa-player" "dragon" "kamoso" "kate" "khelpcenter" "kfind" "konqueror"
     )
     local GAMES_AND_UTILITIES=(
-        "kpatience" "kmines" "ksudoku" "kinfocenter"
+        "kpatience" "kmines" "ksudoku" "kinfocenter" "kpat" "kmahjongg"
     )
 
     TARGETS=(
