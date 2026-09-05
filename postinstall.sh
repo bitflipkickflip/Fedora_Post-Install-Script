@@ -315,8 +315,8 @@ if [ "$OPT_SUBLIME" == "true" ]; then
     sudo dnf remove -y kwrite
     # rpm options used: -v enables verbose output, --import imports the specified GPG signing key
     sudo rpm -v --import https://download.sublimetext.com/sublimehq-rpm-pub.gpg
-    # dnf options used: config-manager --add-repo adds the official Sublime Text repository
-    sudo dnf config-manager --add-repo https://download.sublimetext.com/rpm/stable/x86_64/sublime-text.repo
+    # dnf options used: config-manager addrepo --from-repofile pulls repository configuration from a direct URL (DNF5 syntax)
+    sudo dnf config-manager addrepo --from-repofile=https://download.sublimetext.com/rpm/stable/x86_64/sublime-text.repo
     sudo dnf install -y sublime-text
 fi
 
