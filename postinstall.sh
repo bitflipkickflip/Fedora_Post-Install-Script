@@ -142,8 +142,9 @@ done 2>/dev/null &
 
 
 # ==============================================================================
-# 1. KDE Bloatware Removal Section
+# PHASE 1: REMOVE BLOAT
 # ==============================================================================
+
 if [ "$OPT_KDE_BLOAT" == "true" ]; then
     echo "[+] Executing KDE Bloatware Removal..."
     
@@ -182,10 +183,6 @@ if [ "$OPT_KDE_BLOAT" == "true" ]; then
     done
 fi
 
-
-# ==============================================================================
-# 2. Firefox Removal Section
-# ==============================================================================
 if [ "$OPT_FIREFOX_REMOVE" == "true" ]; then
     echo "[+] Removing Firefox..."
     sudo dnf remove -y firefox
@@ -193,8 +190,21 @@ fi
 
 
 # ==============================================================================
-# 3. Steam Installation Section
+# PHASE 2: INSTALL NVIDIA STUFF
 # ==============================================================================
+
+if [ "$OPT_NVIDIA" == "true" ]; then
+    echo "[+] Installing NVIDIA Drivers..."
+    # dnf options used: config-manager setopt enables a specific repository
+    sudo dnf config-manager setopt rpmfusion-nonfree-nvidia-driver.enabled=1
+    sudo dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda
+fi
+
+
+# ==============================================================================
+# PHASE 3: INSTALL SOFTWARE
+# ==============================================================================
+
 if [ "$OPT_STEAM" == "true" ]; then
     echo "[+] Installing Steam..."
     sudo dnf install -y fedora-workstation-repositories
@@ -202,10 +212,6 @@ if [ "$OPT_STEAM" == "true" ]; then
     sudo dnf install -y steam
 fi
 
-
-# ==============================================================================
-# 4. Brave Browser Installation Section
-# ==============================================================================
 if [ "$OPT_BRAVE" == "true" ]; then
     echo "[+] Installing Brave Browser..."
     # dnf options used: config-manager addrepo --from-repofile pulls repository configuration from a direct URL
@@ -214,10 +220,6 @@ if [ "$OPT_BRAVE" == "true" ]; then
     sudo dnf install -y brave-browser
 fi
 
-
-# ==============================================================================
-# 5. Discord Installation Section
-# ==============================================================================
 if [ "$OPT_DISCORD" == "true" ]; then
     echo "[+] Installing Discord..."
     # dnf options used: installs direct .rpm URLs to setup RPM Fusion repositories
@@ -227,10 +229,6 @@ if [ "$OPT_DISCORD" == "true" ]; then
     sudo dnf install -y discord
 fi
 
-
-# ==============================================================================
-# 6. Prism Launcher Installation Section
-# ==============================================================================
 if [ "$OPT_PRISM" == "true" ]; then
     echo "[+] Installing Prism Launcher via Flatpak..."
     sudo dnf install -y flatpak
@@ -240,10 +238,6 @@ if [ "$OPT_PRISM" == "true" ]; then
     sudo flatpak install --system -y flathub org.prismlauncher.PrismLauncher
 fi
 
-
-# ==============================================================================
-# 7. Jagex Launcher AppImage Installation
-# ==============================================================================
 if [ "$OPT_JAGEX" == "true" ]; then
     echo "[+] Installing Jagex Launcher..."
     BIN_DIR="$HOME/.local/bin"
@@ -264,10 +258,28 @@ if [ "$OPT_JAGEX" == "true" ]; then
     wait "$LAUNCHER_PID" 2>/dev/null
 fi
 
+if [ "$OPT_SUBLIME" == "true" ]; then
+    echo "[+] Replacing KWrite with Sublime Text..."
+    # dnf options used: remove uninstalls package, -y answers yes
+    sudo dnf remove -y kwrite
+    # rpm options used: -v enables verbose output, --import imports the specified GPG signing key
+    sudo rpm -v --import https://download.sublimetext.com/sublimehq-rpm-pub.gpg
+    # dnf options used: config-manager addrepo --from-repofile pulls repository configuration from a direct URL (DNF5 syntax)
+    sudo dnf config-manager addrepo --from-repofile=https://download.sublimetext.com/rpm/stable/x86_64/sublime-text.repo
+    sudo dnf install -y sublime-text
+fi
+
+if [ "$OPT_VLC" == "true" ]; then
+    echo "[+] Installing VLC Media Player..."
+    # dnf options used: install adds package, -y answers yes automatically
+    sudo dnf install -y vlc
+fi
+
 
 # ==============================================================================
-# 8. Wallpaper & Panel Setup Section
+# PHASE 4: ANY REMAINING (Wallpaper & Panel Setup)
 # ==============================================================================
+
 if [ "$WALLPAPER_CHOICE" == "1" ] || [ "$WALLPAPER_CHOICE" == "2" ]; then
     echo "[+] Running Wallpaper and Panel Setup..."
     
@@ -307,44 +319,9 @@ fi
 
 
 # ==============================================================================
-# 9. Replace KWrite with Sublime Text Section
+# PHASE 5: UPDATE SYSTEM (System-Wide Upgrade)
 # ==============================================================================
-if [ "$OPT_SUBLIME" == "true" ]; then
-    echo "[+] Replacing KWrite with Sublime Text..."
-    # dnf options used: remove uninstalls package, -y answers yes
-    sudo dnf remove -y kwrite
-    # rpm options used: -v enables verbose output, --import imports the specified GPG signing key
-    sudo rpm -v --import https://download.sublimetext.com/sublimehq-rpm-pub.gpg
-    # dnf options used: config-manager addrepo --from-repofile pulls repository configuration from a direct URL (DNF5 syntax)
-    sudo dnf config-manager addrepo --from-repofile=https://download.sublimetext.com/rpm/stable/x86_64/sublime-text.repo
-    sudo dnf install -y sublime-text
-fi
 
-
-# ==============================================================================
-# 10. VLC Media Player Installation Section
-# ==============================================================================
-if [ "$OPT_VLC" == "true" ]; then
-    echo "[+] Installing VLC Media Player..."
-    # dnf options used: install adds package, -y answers yes automatically
-    sudo dnf install -y vlc
-fi
-
-
-# ==============================================================================
-# 11. NVIDIA Drivers Installation Section (2nd Last)
-# ==============================================================================
-if [ "$OPT_NVIDIA" == "true" ]; then
-    echo "[+] Installing NVIDIA Drivers..."
-    # dnf options used: config-manager setopt enables a specific repository
-    sudo dnf config-manager setopt rpmfusion-nonfree-nvidia-driver.enabled=1
-    sudo dnf install -y akmod-nvidia xorg-x11-drv-nvidia-cuda
-fi
-
-
-# ==============================================================================
-# 12. System-Wide Upgrade Section (Last Execution Module)
-# ==============================================================================
 if [ "$OPT_UPGRADE" == "true" ]; then
     echo "[+] Performing Full System Upgrade..."
     # dnf options used: upgrade updates all installed packages, -y answers yes
@@ -354,7 +331,7 @@ fi
 
 
 # ==============================================================================
-# 13. System Restart Section
+# SYSTEM RESTART SECTION
 # ==============================================================================
 echo ""
 echo "=== All Selected Modules Complete ==="
