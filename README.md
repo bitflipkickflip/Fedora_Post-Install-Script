@@ -7,5 +7,5 @@ curl -sO https://raw.githubusercontent.com/bitflipkickflip/fedora_postinstall/ma
   * Discord, Steam, Brave, Jagex Launcher, NVIDIA drivers
   * Offers to remove Firefox & KDE bloat apps 
     * **If you have a .runelite folder from another runelite install put it in /home/$USER/.runelite**
-* Vibe coded with ~~love~~ gemini 3.5 flash-lite (free tier slop)
+* Vibe coded with ~~love~~ gemini (free tier slop)
 * First time launching steam will take a minute due to some valve runtime stuff. Just be patient.
