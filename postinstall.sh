@@ -1,20 +1,20 @@
 #!/bin/bash
 
 # ==============================================================================
-# GLOBAL CONFIGURATION DEFAULTS (All off by default, Wallpaper set to 1)
+# GLOBAL CONFIGURATION DEFAULTS (All true by default, except NVIDIA)
 # ==============================================================================
 WALLPAPER_CHOICE="1"          # 1: 2560x1440 (Default), 2: 3440x1440, 3: Skip
-OPT_STEAM="false"
-OPT_BRAVE="false"
-OPT_FIREFOX_REMOVE="false"
-OPT_NVIDIA="false"
-OPT_DISCORD="false"
-OPT_PRISM="false"
-OPT_JAGEX="false"
-OPT_KDE_BLOAT="false"
-OPT_SUBLIME="false"
-OPT_VLC="false"
-OPT_UPGRADE="false"
+OPT_STEAM="true"
+OPT_BRAVE="true"
+OPT_FIREFOX_REMOVE="true"
+OPT_NVIDIA="false"            # Disabled by default per your request
+OPT_DISCORD="true"
+OPT_PRISM="true"
+OPT_JAGEX="true"
+OPT_KDE_BLOAT="true"
+OPT_SUBLIME="true"
+OPT_VLC="true"
+OPT_UPGRADE="true"
 
 # ==============================================================================
 # INTERACTIVE CONFIGURATION MENU
