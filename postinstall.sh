@@ -122,9 +122,9 @@ while true; do
     # tr options used: '[:upper:]' '[:lower:]' translates all uppercase input to lowercase
     input=$(echo "$input" | tr '[:upper:]' '[:lower:]')
     
-    if [ "$input" == "run" ] || [ "$input" == "r" ]; then
+    if [ "$input" == "run" ] \vert{}\vert{} [ "$input" == "r" ]; then
         break
-    elif [ "$input" == "quit" ] || [ "$input" == "q" ]; then
+    elif [ "$input" == "quit" ] \vert{}\vert{} [ "$input" == "q" ]; then
         echo "Abort requested. Exiting."
         exit 0
     else
@@ -143,11 +143,7 @@ echo ""
 sudo -v
 
 # Background loop options used: runs non-interactively every 60 seconds to keep sudo alive, 
-# and automatically terminates when the parent script exits via kill -0 check on PID ($$)
-while true; do
-    sudo -n true
-    sleep 60
-    kill -0 "$$" 2>/dev/null || exit
+# and automatically terminates when the parent script exits via kill -0 check on PID ($$) while true; do     sudo -n true     sleep 60     kill -0 "$$" 2>/dev/null || exit
 done 2>/dev/null &
 
 
@@ -158,31 +154,19 @@ done 2>/dev/null &
 if [ "$OPT_KDE_BLOAT" == "true" ]; then
     echo "[+] Executing KDE Bloatware Removal..."
     
-    PIM_PACKAGES=(
-        "kontact*" "kmail*" "korganizer*" "akregator*" "kaddressbook*"
-        "kcontacts*" "kaccounts-integration" "kaccounts-providers"
-        "akonadi*" "kdepim-addons" "itinerary*"
-    )
-    MEDIA_MISC_PACKAGES=(
-        "elisa-player*" "dragon*" "kamoso*" "kate*" "khelpcenter*" "kfind*" "konqueror*" "neochat*" "ruqola*"
-    )
-    GAMES_AND_UTILITIES=(
-        "kpatience*" "kmines*" "ksudoku*" "kinfocenter*" "kpat*" "kmahjongg*"
+    # Explicit package list without scoping or nesting issues
+    DNF_BLOAT_PACKAGES=(
+        kontact kmail korganizer akregator kaddressbook
+        kcontacts kaccounts-integration kaccounts-providers
+        akonadi-server akonadi-contacts akonadi-calendar
+        kdepim-addons akonadiconsole itinerary
+        elisa-player dragon kamoso kate khelpcenter kfind konqueror neochat
+        kpatience kmines ksudoku kinfocenter kpat kmahjongg
     )
 
-    TARGETS=(
-        "${PIM_PACKAGES[@]}" 
-        "${MEDIA_MISC_PACKAGES[@]}" 
-        "${GAMES_AND_UTILITIES[@]}"
-    )
-
-    # dnf options used: remove uninstalls packages, -y answers yes automatically, --noautoremove prevents premature dependency breaks
-    sudo dnf remove -y "${TARGETS[@]}" 2>/dev/null
+    # dnf options used: remove uninstalls packages, -y answers yes automatically
+    sudo dnf remove -y "${DNF_BLOAT_PACKAGES[@]}"
     
-    # flatpak options used: uninstall removes flatpak package, -y answers yes automatically, --system/--user targets system and user scopes
-    sudo flatpak uninstall -y org.kde.neochat 2>/dev/null
-    flatpak uninstall -y org.kde.neochat 2>/dev/null
-
     # dnf options used: autoremove strips unneeded orphaned libraries
     sudo dnf autoremove -y
 
@@ -199,8 +183,6 @@ fi
 if [ "$OPT_FIREFOX_REMOVE" == "true" ]; then
     echo "[+] Removing Firefox..."
     sudo dnf remove -y firefox
-    sudo flatpak uninstall -y org.mozilla.firefox 2>/dev/null
-    flatpak uninstall -y org.mozilla.firefox 2>/dev/null
 fi
 
 
@@ -277,113 +259,4 @@ if [ "$OPT_SUBLIME" == "true" ]; then
     echo "[+] Replacing KWrite with Sublime Text..."
     # dnf options used: remove uninstalls package, -y answers yes
     sudo dnf remove -y kwrite
-    # rpm options used: -v enables verbose output, --import imports the specified GPG signing key
-    sudo rpm -v --import https://download.sublimetext.com/sublimehq-rpm-pub.gpg
-    # dnf options used: config-manager addrepo --from-repofile pulls repository configuration from a direct URL (DNF5 syntax)
-    sudo dnf config-manager addrepo --from-repofile=https://download.sublimetext.com/rpm/stable/x86_64/sublime-text.repo
-    sudo dnf install -y sublime-text
-fi
-
-if [ "$OPT_VLC" == "true" ]; then
-    echo "[+] Installing VLC Media Player..."
-    # dnf options used: install adds package, -y answers yes automatically
-    sudo dnf install -y vlc
-fi
-
-if [ "$OPT_KDENLIVE" == "true" ]; then
-    echo "[+] Installing Kdenlive..."
-    # dnf options used: install adds package, -y answers yes automatically
-    sudo dnf install -y kdenlive
-fi
-
-if [ "$OPT_ORCASLICER" == "true" ]; then
-    echo "[+] Installing OrcaSlicer via Flatpak..."
-    sudo dnf install -y flatpak
-    # sudo options used: runs command as root to prevent PolicyKit GUI password prompts
-    # flatpak options used: remote-add registers source repo, --if-not-exists avoids duplicates, --system installs globally, install pulls flatpak app, -y answers yes
-    sudo flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-    sudo flatpak install --system -y flathub com.orcaslicer.OrcaSlicer
-fi
-
-
-# ==============================================================================
-# PHASE 4: ANY REMAINING (Wallpaper & Panel Setup)
-# ==============================================================================
-
-if [ "$WALLPAPER_CHOICE" == "1" ] || [ "$WALLPAPER_CHOICE" == "2" ]; then
-    echo "[+] Running Wallpaper and Panel Setup..."
-    
-    if [ "$WALLPAPER_CHOICE" == "1" ]; then
-        URL="https://github.com/bitflipkickflip/fedora_postinstall/blob/main/wallpapers/Fedora_GrayBlue_Penguin_2560_1440.png?raw=true"
-        FILENAME="Fedora_GrayBlue_Penguin_2560_1440.png"
-    elif [ "$WALLPAPER_CHOICE" == "2" ]; then
-        URL="https://github.com/bitflipkickflip/fedora_postinstall/blob/main/wallpapers/Fedora_GrayBlue_Penguin_3440_1440.png?raw=true"
-        FILENAME="Fedora_GrayBlue_Penguin_3440_1440.png"
-    fi
-
-    WALLPAPER_DIR="$HOME/.local/share/wallpapers"
-    mkdir -p "$WALLPAPER_DIR"
-    
-    curl -L -o "$WALLPAPER_DIR/$FILENAME" "$URL"
-    WALLPAPER_PATH="$WALLPAPER_DIR/$FILENAME"
-
-    qdbus-qt6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript "
-        var allDesktops = desktops();
-        for (i=0;i<allDesktops.length;i++) {
-            d = allDesktops[i];
-            d.wallpaperPlugin = 'org.kde.image';
-            d.currentConfigGroup = Array('Wallpaper', 'org.kde.image', 'General');
-            d.writeConfig('Image', 'file://$WALLPAPER_PATH');
-        }
-    "
-    # kwriteconfig6 options used: --file specifies target config, --group nests configuration layers, --key defines target property
-    kwriteconfig6 --file kscreenlockerrc --group Greeter --group Wallpaper --group org.kde.image --group General --key Image "file://$WALLPAPER_PATH"
-
-    # killall options used: cleanly terminates all instances of plasmashell
-    kquitapp6 plasmashell 2>/dev/null || killall plasmashell 2>/dev/null
-    sleep 1
-    kwriteconfig6 --file plasmashellrc --group "PlasmaViews" --group "Panel 1" --key "floating" "0" 2>/dev/null
-    kwriteconfig6 --file plasmashellrc --group "PlasmaViews" --group "Panel 2" --key "floating" "0" 2>/dev/null
-    plasmashell >/dev/null 2>&1 &
-fi
-
-
-# ==============================================================================
-# PHASE 5: UPDATE SYSTEM (System-Wide Upgrade)
-# ==============================================================================
-
-if [ "$OPT_UPGRADE" == "true" ]; then
-    echo "[+] Performing Full System Upgrade..."
-    # dnf options used: upgrade updates all installed packages, -y answers yes
-    sudo dnf upgrade -y
-    sudo dnf autoremove -y
-fi
-
-
-# ==============================================================================
-# SYSTEM RESTART SECTION
-# ==============================================================================
-echo ""
-echo "=== All Selected Modules Complete ==="
-read -p "Would you like to restart your system now? [Y/n]: " raw_reboot_choice </dev/tty
-
-# tr options used: '[:upper:]' '[:lower:]' converts input to lowercase to support case-insensitive checks
-reboot_choice=$(echo "$raw_reboot_choice" | tr '[:upper:]' '[:lower:]')
-
-if [[ -z "$reboot_choice" || "$reboot_choice" == "y" || "$reboot_choice" == "yes" || "$reboot_choice" == "1" ]]; then
-    # pgrep options used: -x mandates an exact match of the process name
-    while pgrep -x "dnf" >/dev/null || pgrep -x "akmods" >/dev/null; do
-        echo "Background tasks still running. Waiting 5 seconds..."
-        sleep 5
-    done
-    
-    # Clean up script right before reboot
-    rm -- "$0"
-    
-    # reboot options used: gracefully reboots the system
-    sudo reboot
-else
-    # Clean up script right before exiting
-    rm -- "$0"
-    echo "Setup finished! Remember to reboot manually if you installed NVIDIA drivers."
-fi
+    # rpm options used
