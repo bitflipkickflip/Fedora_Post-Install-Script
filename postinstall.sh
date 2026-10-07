@@ -158,17 +158,16 @@ done 2>/dev/null &
 if [ "$OPT_KDE_BLOAT" == "true" ]; then
     echo "[+] Executing KDE Bloatware Removal..."
     
-    local PIM_PACKAGES=(
-        "kontact" "kmail" "korganizer" "akregator" "kaddressbook"
-        "kcontacts" "kaccounts-integration" "kaccounts-providers"
-        "akonadi-server" "akonadi-contacts" "akonadi-calendar"
-        "kdepim-addons" "akonadiconsole" "itinerary"
+    PIM_PACKAGES=(
+        "kontact*" "kmail*" "korganizer*" "akregator*" "kaddressbook*"
+        "kcontacts*" "kaccounts-integration" "kaccounts-providers"
+        "akonadi*" "kdepim-addons" "itinerary*"
     )
-    local MEDIA_MISC_PACKAGES=(
-        "elisa-player" "dragon" "kamoso" "kate" "khelpcenter" "kfind" "konqueror"
+    MEDIA_MISC_PACKAGES=(
+        "elisa-player*" "dragon*" "kamoso*" "kate*" "khelpcenter*" "kfind*" "konqueror*" "neochat*" "ruqola*"
     )
-    local GAMES_AND_UTILITIES=(
-        "kpatience" "kmines" "ksudoku" "kinfocenter" "kpat" "kmahjongg"
+    GAMES_AND_UTILITIES=(
+        "kpatience*" "kmines*" "ksudoku*" "kinfocenter*" "kpat*" "kmahjongg*"
     )
 
     TARGETS=(
@@ -177,16 +176,20 @@ if [ "$OPT_KDE_BLOAT" == "true" ]; then
         "${GAMES_AND_UTILITIES[@]}"
     )
 
-    # dnf options used: remove uninstalls packages, -y answers yes automatically
-    sudo dnf remove -y "${TARGETS[@]}"
+    # dnf options used: remove uninstalls packages, -y answers yes automatically, --noautoremove prevents premature dependency breaks
+    sudo dnf remove -y "${TARGETS[@]}" 2>/dev/null
     
+    # flatpak options used: uninstall removes flatpak package, -y answers yes automatically, --system/--user targets system and user scopes
+    sudo flatpak uninstall -y org.kde.neochat 2>/dev/null
+    flatpak uninstall -y org.kde.neochat 2>/dev/null
+
     # dnf options used: autoremove strips unneeded orphaned libraries
     sudo dnf autoremove -y
 
     # find options used: -iname matches case-insensitively, -exec rm -rf {} + passes all found paths to rm recursively
-    local CONFIG_PATTERNS=(
+    CONFIG_PATTERNS=(
         "*kontact*" "*kmail*" "*akonadi*" "*korganizer*" "*elisa*" 
-        "*kaccounts*" "*kpatience*" "*kmines*" "*ksudoku*"
+        "*kaccounts*" "*kpatience*" "*kmines*" "*ksudoku*" "*neochat*"
     )
     for pattern in "${CONFIG_PATTERNS[@]}"; do
         find ~/.config ~/.local/share ~/.cache -iname "$pattern" -exec rm -rf {} + 2>/dev/null
@@ -196,6 +199,8 @@ fi
 if [ "$OPT_FIREFOX_REMOVE" == "true" ]; then
     echo "[+] Removing Firefox..."
     sudo dnf remove -y firefox
+    sudo flatpak uninstall -y org.mozilla.firefox 2>/dev/null
+    flatpak uninstall -y org.mozilla.firefox 2>/dev/null
 fi
 
 
@@ -360,22 +365,25 @@ fi
 # ==============================================================================
 echo ""
 echo "=== All Selected Modules Complete ==="
-read -p "Would you like to restart your system now? (1) Yes (2) No: " reboot_choice </dev/tty
+read -p "Would you like to restart your system now? [Y/n]: " raw_reboot_choice </dev/tty
 
-if [ "$reboot_choice" == "1" ]; then
+# tr options used: '[:upper:]' '[:lower:]' converts input to lowercase to support case-insensitive checks
+reboot_choice=$(echo "$raw_reboot_choice" | tr '[:upper:]' '[:lower:]')
+
+if [[ -z "$reboot_choice" || "$reboot_choice" == "y" || "$reboot_choice" == "yes" || "$reboot_choice" == "1" ]]; then
     # pgrep options used: -x mandates an exact match of the process name
     while pgrep -x "dnf" >/dev/null || pgrep -x "akmods" >/dev/null; do
         echo "Background tasks still running. Waiting 5 seconds..."
         sleep 5
     done
     
-    # 0. Clean up script (Runs right before reboot)
+    # Clean up script right before reboot
     rm -- "$0"
     
     # reboot options used: gracefully reboots the system
     sudo reboot
 else
-    # 0. Clean up script (Runs right before exiting)
+    # Clean up script right before exiting
     rm -- "$0"
     echo "Setup finished! Remember to reboot manually if you installed NVIDIA drivers."
 fi
