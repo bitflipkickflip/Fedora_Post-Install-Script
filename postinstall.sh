@@ -30,7 +30,7 @@ show_options() {
     echo "--------------------------------------------------------"
     
     # printf options used: %-32s pads the string to exactly 32 characters left-aligned to lock colons in place
-    printf " %-32s : %s\n" "[1] Wallpaper Setup" "$(if [ "$WALLPAPER_CHOICE" == "3" ]; then echo "Disabled (3)"; else echo "Resolution $WALLPAPER_CHOICE"; fi)"
+    printf " %-32s : %s\n" "[1] Wallpaper Setup" "$(if [[ "$WALLPAPER_CHOICE" == "3" ]]; then echo "Disabled (3)"; else echo "Resolution $WALLPAPER_CHOICE"; fi)"
     printf " %-32s : %s\n" "[2] Install Steam" "$OPT_STEAM"
     printf " %-32s : %s\n" "[3] Install Brave" "$OPT_BRAVE"
     printf " %-32s : %s\n" "[4] Remove Firefox" "$OPT_FIREFOX_REMOVE"
@@ -69,43 +69,43 @@ toggle_option() {
             read -p "Enter choice (1-3): " WALLPAPER_CHOICE </dev/tty
             ;;
         2)
-            if [ "$OPT_STEAM" == "true" ]; then OPT_STEAM="false"; else OPT_STEAM="true"; fi
+            if [[ "$OPT_STEAM" == "true" ]]; then OPT_STEAM="false"; else OPT_STEAM="true"; fi
             ;;
         3)
-            if [ "$OPT_BRAVE" == "true" ]; then OPT_BRAVE="false"; else OPT_BRAVE="true"; fi
+            if [[ "$OPT_BRAVE" == "true" ]]; then OPT_BRAVE="false"; else OPT_BRAVE="true"; fi
             ;;
         4)
-            if [ "$OPT_FIREFOX_REMOVE" == "true" ]; then OPT_FIREFOX_REMOVE="false"; else OPT_FIREFOX_REMOVE="true"; fi
+            if [[ "$OPT_FIREFOX_REMOVE" == "true" ]]; then OPT_FIREFOX_REMOVE="false"; else OPT_FIREFOX_REMOVE="true"; fi
             ;;
         5)
-            if [ "$OPT_NVIDIA" == "true" ]; then OPT_NVIDIA="false"; else OPT_NVIDIA="true"; fi
+            if [[ "$OPT_NVIDIA" == "true" ]]; then OPT_NVIDIA="false"; else OPT_NVIDIA="true"; fi
             ;;
         6)
-            if [ "$OPT_DISCORD" == "true" ]; then OPT_DISCORD="false"; else OPT_DISCORD="true"; fi
+            if [[ "$OPT_DISCORD" == "true" ]]; then OPT_DISCORD="false"; else OPT_DISCORD="true"; fi
             ;;
         7)
-            if [ "$OPT_PRISM" == "true" ]; then OPT_PRISM="false"; else OPT_PRISM="true"; fi
+            if [[ "$OPT_PRISM" == "true" ]]; then OPT_PRISM="false"; else OPT_PRISM="true"; fi
             ;;
         8)
-            if [ "$OPT_JAGEX" == "true" ]; then OPT_JAGEX="false"; else OPT_JAGEX="true"; fi
+            if [[ "$OPT_JAGEX" == "true" ]]; then OPT_JAGEX="false"; else OPT_JAGEX="true"; fi
             ;;
         9)
-            if [ "$OPT_KDE_BLOAT" == "true" ]; then OPT_KDE_BLOAT="false"; else OPT_KDE_BLOAT="true"; fi
+            if [[ "$OPT_KDE_BLOAT" == "true" ]]; then OPT_KDE_BLOAT="false"; else OPT_KDE_BLOAT="true"; fi
             ;;
         10)
-            if [ "$OPT_SUBLIME" == "true" ]; then OPT_SUBLIME="false"; else OPT_SUBLIME="true"; fi
+            if [[ "$OPT_SUBLIME" == "true" ]]; then OPT_SUBLIME="false"; else OPT_SUBLIME="true"; fi
             ;;
         11)
-            if [ "$OPT_VLC" == "true" ]; then OPT_VLC="false"; else OPT_VLC="true"; fi
+            if [[ "$OPT_VLC" == "true" ]]; then OPT_VLC="false"; else OPT_VLC="true"; fi
             ;;
         12)
-            if [ "$OPT_KDENLIVE" == "true" ]; then OPT_KDENLIVE="false"; else OPT_KDENLIVE="true"; fi
+            if [[ "$OPT_KDENLIVE" == "true" ]]; then OPT_KDENLIVE="false"; else OPT_KDENLIVE="true"; fi
             ;;
         13)
-            if [ "$OPT_ORCASLICER" == "true" ]; then OPT_ORCASLICER="false"; else OPT_ORCASLICER="true"; fi
+            if [[ "$OPT_ORCASLICER" == "true" ]]; then OPT_ORCASLICER="false"; else OPT_ORCASLICER="true"; fi
             ;;
         14)
-            if [ "$OPT_UPGRADE" == "true" ]; then OPT_UPGRADE="false"; else OPT_UPGRADE="true"; fi
+            if [[ "$OPT_UPGRADE" == "true" ]]; then OPT_UPGRADE="false"; else OPT_UPGRADE="true"; fi
             ;;
         *)
             echo "Invalid option. Press Enter to continue..."
@@ -122,9 +122,9 @@ while true; do
     # tr options used: '[:upper:]' '[:lower:]' translates all uppercase input to lowercase
     input=$(echo "$input" | tr '[:upper:]' '[:lower:]')
     
-    if [ "$input" == "run" ] \vert{}\vert{} [ "$input" == "r" ]; then
+    if [[ "$input" == "run" || "$input" == "r" ]]; then
         break
-    elif [ "$input" == "quit" ] \vert{}\vert{} [ "$input" == "q" ]; then
+    elif [[ "$input" == "quit" || "$input" == "q" ]]; then
         echo "Abort requested. Exiting."
         exit 0
     else
@@ -143,7 +143,11 @@ echo ""
 sudo -v
 
 # Background loop options used: runs non-interactively every 60 seconds to keep sudo alive, 
-# and automatically terminates when the parent script exits via kill -0 check on PID ($$) while true; do     sudo -n true     sleep 60     kill -0 "$$" 2>/dev/null || exit
+# and automatically terminates when the parent script exits via kill -0 check on PID ($$)
+while true; do
+    sudo -n true
+    sleep 60
+    kill -0 "$$" 2>/dev/null || exit
 done 2>/dev/null &
 
 
@@ -151,10 +155,9 @@ done 2>/dev/null &
 # PHASE 1: REMOVE BLOAT
 # ==============================================================================
 
-if [ "$OPT_KDE_BLOAT" == "true" ]; then
+if [[ "$OPT_KDE_BLOAT" == "true" ]]; then
     echo "[+] Executing KDE Bloatware Removal..."
     
-    # Explicit package list without scoping or nesting issues
     DNF_BLOAT_PACKAGES=(
         kontact kmail korganizer akregator kaddressbook
         kcontacts kaccounts-integration kaccounts-providers
@@ -180,7 +183,7 @@ if [ "$OPT_KDE_BLOAT" == "true" ]; then
     done
 fi
 
-if [ "$OPT_FIREFOX_REMOVE" == "true" ]; then
+if [[ "$OPT_FIREFOX_REMOVE" == "true" ]]; then
     echo "[+] Removing Firefox..."
     sudo dnf remove -y firefox
 fi
@@ -190,7 +193,7 @@ fi
 # PHASE 2: INSTALL NVIDIA STUFF
 # ==============================================================================
 
-if [ "$OPT_NVIDIA" == "true" ]; then
+if [[ "$OPT_NVIDIA" == "true" ]]; then
     echo "[+] Installing NVIDIA Drivers..."
     # dnf options used: config-manager setopt enables a specific repository
     sudo dnf config-manager setopt rpmfusion-nonfree-nvidia-driver.enabled=1
@@ -202,14 +205,14 @@ fi
 # PHASE 3: INSTALL SOFTWARE
 # ==============================================================================
 
-if [ "$OPT_STEAM" == "true" ]; then
+if [[ "$OPT_STEAM" == "true" ]]; then
     echo "[+] Installing Steam..."
     sudo dnf install -y fedora-workstation-repositories
     sudo dnf config-manager setopt rpmfusion-nonfree-steam.enabled=1
     sudo dnf install -y steam
 fi
 
-if [ "$OPT_BRAVE" == "true" ]; then
+if [[ "$OPT_BRAVE" == "true" ]]; then
     echo "[+] Installing Brave Browser..."
     # dnf options used: config-manager addrepo --from-repofile pulls repository configuration from a direct URL
     sudo dnf install -y dnf-plugins-core
@@ -217,7 +220,7 @@ if [ "$OPT_BRAVE" == "true" ]; then
     sudo dnf install -y brave-browser
 fi
 
-if [ "$OPT_DISCORD" == "true" ]; then
+if [[ "$OPT_DISCORD" == "true" ]]; then
     echo "[+] Installing Discord..."
     # dnf options used: installs direct .rpm URLs to setup RPM Fusion repositories
     sudo dnf install -y \
@@ -226,7 +229,7 @@ if [ "$OPT_DISCORD" == "true" ]; then
     sudo dnf install -y discord
 fi
 
-if [ "$OPT_PRISM" == "true" ]; then
+if [[ "$OPT_PRISM" == "true" ]]; then
     echo "[+] Installing Prism Launcher via Flatpak..."
     sudo dnf install -y flatpak
     # sudo options used: runs command as root to prevent PolicyKit GUI password prompts
@@ -235,7 +238,7 @@ if [ "$OPT_PRISM" == "true" ]; then
     sudo flatpak install --system -y flathub org.prismlauncher.PrismLauncher
 fi
 
-if [ "$OPT_JAGEX" == "true" ]; then
+if [[ "$OPT_JAGEX" == "true" ]]; then
     echo "[+] Installing Jagex Launcher..."
     BIN_DIR="$HOME/.local/bin"
     # mkdir options used: -p creates parent directories as needed without throwing errors if they exist
@@ -255,8 +258,117 @@ if [ "$OPT_JAGEX" == "true" ]; then
     wait "$LAUNCHER_PID" 2>/dev/null
 fi
 
-if [ "$OPT_SUBLIME" == "true" ]; then
+if [[ "$OPT_SUBLIME" == "true" ]]; then
     echo "[+] Replacing KWrite with Sublime Text..."
     # dnf options used: remove uninstalls package, -y answers yes
     sudo dnf remove -y kwrite
-    # rpm options used
+    # rpm options used: -v enables verbose output, --import imports the specified GPG signing key
+    sudo rpm -v --import https://download.sublimetext.com/sublimehq-rpm-pub.gpg
+    # dnf options used: config-manager addrepo --from-repofile pulls repository configuration from a direct URL (DNF5 syntax)
+    sudo dnf config-manager addrepo --from-repofile=https://download.sublimetext.com/rpm/stable/x86_64/sublime-text.repo
+    sudo dnf install -y sublime-text
+fi
+
+if [[ "$OPT_VLC" == "true" ]]; then
+    echo "[+] Installing VLC Media Player..."
+    # dnf options used: install adds package, -y answers yes automatically
+    sudo dnf install -y vlc
+fi
+
+if [[ "$OPT_KDENLIVE" == "true" ]]; then
+    echo "[+] Installing Kdenlive..."
+    # dnf options used: install adds package, -y answers yes automatically
+    sudo dnf install -y kdenlive
+fi
+
+if [[ "$OPT_ORCASLICER" == "true" ]]; then
+    echo "[+] Installing OrcaSlicer via Flatpak..."
+    sudo dnf install -y flatpak
+    # sudo options used: runs command as root to prevent PolicyKit GUI password prompts
+    # flatpak options used: remote-add registers source repo, --if-not-exists avoids duplicates, --system installs globally, install pulls flatpak app, -y answers yes
+    sudo flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+    sudo flatpak install --system -y flathub com.orcaslicer.OrcaSlicer
+fi
+
+
+# ==============================================================================
+# PHASE 4: ANY REMAINING (Wallpaper & Panel Setup)
+# ==============================================================================
+
+if [[ "$WALLPAPER_CHOICE" == "1" || "$WALLPAPER_CHOICE" == "2" ]]; then
+    echo "[+] Running Wallpaper and Panel Setup..."
+    
+    if [[ "$WALLPAPER_CHOICE" == "1" ]]; then
+        URL="https://github.com/bitflipkickflip/fedora_postinstall/blob/main/wallpapers/Fedora_GrayBlue_Penguin_2560_1440.png?raw=true"
+        FILENAME="Fedora_GrayBlue_Penguin_2560_1440.png"
+    elif [[ "$WALLPAPER_CHOICE" == "2" ]]; then
+        URL="https://github.com/bitflipkickflip/fedora_postinstall/blob/main/wallpapers/Fedora_GrayBlue_Penguin_3440_1440.png?raw=true"
+        FILENAME="Fedora_GrayBlue_Penguin_3440_1440.png"
+    fi
+
+    WALLPAPER_DIR="$HOME/.local/share/wallpapers"
+    mkdir -p "$WALLPAPER_DIR"
+    
+    curl -L -o "$WALLPAPER_DIR/$FILENAME" "$URL"
+    WALLPAPER_PATH="$WALLPAPER_DIR/$FILENAME"
+
+    qdbus-qt6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript "
+        var allDesktops = desktops();
+        for (i=0;i<allDesktops.length;i++) {
+            d = allDesktops[i];
+            d.wallpaperPlugin = 'org.kde.image';
+            d.currentConfigGroup = Array('Wallpaper', 'org.kde.image', 'General');
+            d.writeConfig('Image', 'file://$WALLPAPER_PATH');
+        }
+    "
+    # kwriteconfig6 options used: --file specifies target config, --group nests configuration layers, --key defines target property
+    kwriteconfig6 --file kscreenlockerrc --group Greeter --group Wallpaper --group org.kde.image --group General --key Image "file://$WALLPAPER_PATH"
+
+    # killall options used: cleanly terminates all instances of plasmashell
+    kquitapp6 plasmashell 2>/dev/null || killall plasmashell 2>/dev/null
+    sleep 1
+    kwriteconfig6 --file plasmashellrc --group "PlasmaViews" --group "Panel 1" --key "floating" "0" 2>/dev/null
+    kwriteconfig6 --file plasmashellrc --group "PlasmaViews" --group "Panel 2" --key "floating" "0" 2>/dev/null
+    plasmashell >/dev/null 2>&1 &
+fi
+
+
+# ==============================================================================
+# PHASE 5: UPDATE SYSTEM (System-Wide Upgrade)
+# ==============================================================================
+
+if [[ "$OPT_UPGRADE" == "true" ]]; then
+    echo "[+] Performing Full System Upgrade..."
+    # dnf options used: upgrade updates all installed packages, -y answers yes
+    sudo dnf upgrade -y
+    sudo dnf autoremove -y
+fi
+
+
+# ==============================================================================
+# SYSTEM RESTART SECTION
+# ==============================================================================
+echo ""
+echo "=== All Selected Modules Complete ==="
+read -p "Would you like to restart your system now? [Y/n]: " raw_reboot_choice </dev/tty
+
+# tr options used: '[:upper:]' '[:lower:]' converts input to lowercase to support case-insensitive checks
+reboot_choice=$(echo "$raw_reboot_choice" | tr '[:upper:]' '[:lower:]')
+
+if [[ -z "$reboot_choice" || "$reboot_choice" == "y" || "$reboot_choice" == "yes" || "$reboot_choice" == "1" ]]; then
+    # pgrep options used: -x mandates an exact match of the process name
+    while pgrep -x "dnf" >/dev/null || pgrep -x "akmods" >/dev/null; do
+        echo "Background tasks still running. Waiting 5 seconds..."
+        sleep 5
+    done
+    
+    # Clean up script right before reboot
+    rm -- "$0"
+    
+    # reboot options used: gracefully reboots the system
+    sudo reboot
+else
+    # Clean up script right before exiting
+    rm -- "$0"
+    echo "Setup finished! Remember to reboot manually if you installed NVIDIA drivers."
+fi
