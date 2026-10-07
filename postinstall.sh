@@ -14,6 +14,8 @@ OPT_JAGEX="true"
 OPT_KDE_BLOAT="true"
 OPT_SUBLIME="true"
 OPT_VLC="true"
+OPT_KDENLIVE="true"
+OPT_ORCASLICER="true"
 OPT_UPGRADE="true"
 
 # ==============================================================================
@@ -24,7 +26,7 @@ show_options() {
     echo "========================================================"
     echo "         FEDORA POST-INSTALLATION CONFIGURATOR          "
     echo "========================================================"
-    echo " Module / Option                  Current Status        "
+    echo " Module / Option                 Current Status         "
     echo "--------------------------------------------------------"
     
     # printf options used: %-32s pads the string to exactly 32 characters left-aligned to lock colons in place
@@ -39,7 +41,9 @@ show_options() {
     printf " %-32s : %s\n" "[9] Remove KDE Bloat" "$OPT_KDE_BLOAT"
     printf " %-32s : %s\n" "[10] Replace KWrite w/ Sublime" "$OPT_SUBLIME"
     printf " %-32s : %s\n" "[11] Install VLC" "$OPT_VLC"
-    printf " %-32s : %s\n" "[12] System Upgrade" "$OPT_UPGRADE"
+    printf " %-32s : %s\n" "[12] Install Kdenlive" "$OPT_KDENLIVE"
+    printf " %-32s : %s\n" "[13] Install OrcaSlicer" "$OPT_ORCASLICER"
+    printf " %-32s : %s\n" "[14] System Upgrade" "$OPT_UPGRADE"
 
     echo "========================================================"
     echo " Wallpaper Options (select via #1):"
@@ -47,7 +51,7 @@ show_options() {
     echo "   2 = Ultrawide 1440p (3440x1440)"
     echo "   3 = Skip Wallpaper Setup"
     echo "--------------------------------------------------------"
-    echo " Enter module number to toggle/configure (1-12)"
+    echo " Enter module number to toggle/configure (1-14)"
     echo " Type 'run' or 'r' to execute script"
     echo " Type 'quit' or 'q' to abort"
     echo "========================================================"
@@ -95,6 +99,12 @@ toggle_option() {
             if [ "$OPT_VLC" == "true" ]; then OPT_VLC="false"; else OPT_VLC="true"; fi
             ;;
         12)
+            if [ "$OPT_KDENLIVE" == "true" ]; then OPT_KDENLIVE="false"; else OPT_KDENLIVE="true"; fi
+            ;;
+        13)
+            if [ "$OPT_ORCASLICER" == "true" ]; then OPT_ORCASLICER="false"; else OPT_ORCASLICER="true"; fi
+            ;;
+        14)
             if [ "$OPT_UPGRADE" == "true" ]; then OPT_UPGRADE="false"; else OPT_UPGRADE="true"; fi
             ;;
         *)
@@ -273,6 +283,21 @@ if [ "$OPT_VLC" == "true" ]; then
     echo "[+] Installing VLC Media Player..."
     # dnf options used: install adds package, -y answers yes automatically
     sudo dnf install -y vlc
+fi
+
+if [ "$OPT_KDENLIVE" == "true" ]; then
+    echo "[+] Installing Kdenlive..."
+    # dnf options used: install adds package, -y answers yes automatically
+    sudo dnf install -y kdenlive
+fi
+
+if [ "$OPT_ORCASLICER" == "true" ]; then
+    echo "[+] Installing OrcaSlicer via Flatpak..."
+    sudo dnf install -y flatpak
+    # sudo options used: runs command as root to prevent PolicyKit GUI password prompts
+    # flatpak options used: remote-add registers source repo, --if-not-exists avoids duplicates, --system installs globally, install pulls flatpak app, -y answers yes
+    sudo flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+    sudo flatpak install --system -y flathub com.orcaslicer.OrcaSlicer
 fi
 
 
