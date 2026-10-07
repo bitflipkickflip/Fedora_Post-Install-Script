@@ -165,7 +165,7 @@ if [ "$OPT_KDE_BLOAT" == "true" ]; then
         "kdepim-addons" "akonadiconsole" "itinerary"
     )
     local MEDIA_MISC_PACKAGES=(
-        "elisa-player" "dragon" "kamoso" "kate" "khelpcenter" "kfind" "konqueror" "neochat"
+        "elisa-player" "dragon" "kamoso" "kate" "khelpcenter" "kfind" "konqueror"
     )
     local GAMES_AND_UTILITIES=(
         "kpatience" "kmines" "ksudoku" "kinfocenter" "kpat" "kmahjongg"
@@ -186,7 +186,7 @@ if [ "$OPT_KDE_BLOAT" == "true" ]; then
     # find options used: -iname matches case-insensitively, -exec rm -rf {} + passes all found paths to rm recursively
     local CONFIG_PATTERNS=(
         "*kontact*" "*kmail*" "*akonadi*" "*korganizer*" "*elisa*" 
-        "*kaccounts*" "*kpatience*" "*kmines*" "*ksudoku*" "*neochat*"
+        "*kaccounts*" "*kpatience*" "*kmines*" "*ksudoku*"
     )
     for pattern in "${CONFIG_PATTERNS[@]}"; do
         find ~/.config ~/.local/share ~/.cache -iname "$pattern" -exec rm -rf {} + 2>/dev/null
