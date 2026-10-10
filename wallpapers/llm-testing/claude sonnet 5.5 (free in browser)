@@ -1,0 +1,861 @@
+#!/bin/bash
+#
+# postinstall.sh — Fedora KDE Plasma 6 Post-Installation Configurator
+#
+# Usage (from a fresh install, as a normal user):
+#   curl -sO https://raw.githubusercontent.com/bitflipkickflip/fedora_postinstall/main/postinstall.sh && bash postinstall.sh
+#
+set -u -o pipefail
+
+# ─────────────────────────────────────────────
+# SECTION: Constants & Environment Detection
+# ─────────────────────────────────────────────
+
+# Detect Fedora major version at runtime (no hardcoding)
+readonly FEDORA_VERSION="$(. /etc/os-release; echo "${VERSION_ID}")"
+readonly SCRIPT_NAME="postinstall.sh"
+readonly SCRIPT_PATH="${BASH_SOURCE[0]:-${SCRIPT_NAME}}"
+readonly GITHUB_BASE="https://raw.githubusercontent.com/bitflipkickflip/fedora_postinstall/main/wallpapers"
+readonly WALLPAPER_DIR="${HOME}/.local/share/wallpapers"
+readonly WALLPAPER_STANDARD="Fedora_GrayBlue_Penguin_2560_1440.png"
+readonly WALLPAPER_ULTRAWIDE="Fedora_GrayBlue_Penguin_3440_1440.png"
+readonly BRAVE_REPO_URL="https://brave-browser-rpm-release.s3.brave.com/brave-browser.repo"
+readonly JAGEX_URL="https://rs-launcher-updates.runescape.com/production/linux/x64/latest/jagex-launcher-beta-linux-x86_64.AppImage"
+readonly JAGEX_PATH="${HOME}/.local/bin/jagex-launcher.AppImage"
+readonly SUBRIME_KEY_URL="https://download.sublimetext.com/sublimehq-rpm-pub.gpg"
+readonly SUBRIME_REPO_URL="https://download.sublimetext.com/rpm/stable/x86_64/sublime-text.repo"
+readonly FLATHUB_REMOTE_URL="https://flathub.org/repo/flathub.flatpakrepo"
+
+# ─────────────────────────────────────────────
+# SECTION: Colors & Logging
+# ─────────────────────────────────────────────
+
+readonly RESET="\033[0m"
+readonly BLUE="\033[34m"
+readonly GREEN="\033[32m"
+readonly YELLOW="\033[33m"
+readonly RED="\033[31m"
+readonly BOLD="\033[1m"
+
+log_info() {
+    echo -e "${BLUE}[INFO]${RESET} $*"
+}
+
+log_success() {
+    echo -e "${GREEN}[ OK ]${RESET} $*"
+}
+
+log_warning() {
+    echo -e "${YELLOW}[WARN]${RESET} $*"
+}
+
+# ─────────────────────────────────────────────
+# SECTION: State
+# ─────────────────────────────────────────────
+
+# Ordered module keys (indexed array guarantees stable menu order)
+readonly MODULE_ORDER=(
+    "wallpaper"
+    "upgrade"
+    "nvidia"
+    "brave"
+    "firefox"
+    "steam"
+    "prism"
+    "jagex"
+    "discord"
+    "vlc"
+    "kdenlive"
+    "sublime"
+    "orca"
+    "bloat"
+)
+
+# Module labels for display
+declare -A MODULE_LABEL=(
+    ["wallpaper"]="Wallpaper Setup"
+    ["upgrade"]="System Upgrade"
+    ["nvidia"]="Install NVIDIA Drivers"
+    ["brave"]="Install Brave"
+    ["firefox"]="Remove Firefox"
+    ["steam"]="Install Steam"
+    ["prism"]="Install Prism Launcher"
+    ["jagex"]="Install Jagex Launcher"
+    ["discord"]="Install Discord"
+    ["vlc"]="Install VLC"
+    ["kdenlive"]="Install Kdenlive"
+    ["sublime"]="Replace KWrite with Sublime Text"
+    ["orca"]="Install OrcaSlicer"
+    ["bloat"]="Remove KDE Bloat"
+)
+
+# Module states: "on", "off", or wallpaper value "1", "2", "3"
+declare -A MODULE_STATE=(
+    ["wallpaper"]="1"
+    ["upgrade"]="on"
+    ["nvidia"]="off"
+    ["brave"]="on"
+    ["firefox"]="on"
+    ["steam"]="on"
+    ["prism"]="on"
+    ["jagex"]="on"
+    ["discord"]="on"
+    ["vlc"]="on"
+    ["kdenlive"]="on"
+    ["sublime"]="on"
+    ["orca"]="on"
+    ["bloat"]="on"
+)
+
+# Category mapping: module key -> category name
+declare -A MODULE_CATEGORY=(
+    ["wallpaper"]="Appearance"
+    ["upgrade"]="System"
+    ["nvidia"]="System"
+    ["brave"]="Browsers"
+    ["firefox"]="Browsers"
+    ["steam"]="Gaming"
+    ["prism"]="Gaming"
+    ["jagex"]="Gaming"
+    ["discord"]="Communication & Media"
+    ["vlc"]="Communication & Media"
+    ["kdenlive"]="Communication & Media"
+    ["sublime"]="Productivity & Creative"
+    ["orca"]="Productivity & Creative"
+    ["bloat"]="Debloat"
+)
+
+# Track which modules failed
+declare -A FAILED_MODULES=()
+
+# RPM Fusion lazy-init flag
+RPMFUSION_CONFIGURED=false
+
+# Sudo keep-alive PID (global for trap access)
+SUDO_KEEPALIVE_PID=""
+
+# ─────────────────────────────────────────────
+# SECTION: Sudo Credential Management
+# ─────────────────────────────────────────────
+
+cleanup_sudo() {
+    # Kill the background keep-alive process if it is still running
+    if [ -n "$SUDO_KEEPALIVE_PID" ]; then
+        kill "$SUDO_KEEPALIVE_PID" 2>/dev/null || true
+        wait "$SUDO_KEEPALIVE_PID" 2>/dev/null || true
+        SUDO_KEEPALIVE_PID=""
+    fi
+}
+
+acquire_sudo() {
+    log_info "This script will use sudo for system-wide operations."
+    log_info "You will be asked for your password once now."
+    echo
+    # -v validates the credential and caches it without running a command
+    sudo -v || { log_warning "Sudo authentication failed."; return 1; }
+
+    # Start a background loop that refreshes the sudo timestamp every 150 s
+    # (default sudo timeout is 300 s; we refresh at half that interval)
+    (
+        while true; do
+            # -n: non-interactive, so it never prompts; just refreshes or fails silently
+            sudo -n true 2>/dev/null
+            sleep 150
+        done
+    ) &
+    SUDO_KEEPALIVE_PID=$!
+    # Register cleanup so the helper is never orphaned
+    trap cleanup_sudo EXIT
+    log_success "Sudo credential acquired and will be kept alive."
+}
+
+# ─────────────────────────────────────────────
+# SECTION: Menu Rendering
+# ─────────────────────────────────────────────
+
+# Return the display string for a module's current status
+module_status_text() {
+    local key="$1"
+    local state="${MODULE_STATE[$key]}"
+    if [ "$key" = "wallpaper" ]; then
+        case "$state" in
+            1) echo "Resolution 2560x1440" ;;
+            2) echo "Resolution 3440x1440" ;;
+            3|*) echo "Disabled" ;;
+        esac
+    else
+        if [ "$state" = "on" ]; then
+            printf "${GREEN}ON${RESET}"
+        else
+            printf "${RED}OFF${RESET}"
+        fi
+    fi
+}
+
+render_menu() {
+    clear
+    local title="FEDORA POST-INSTALLATION CONFIGURATOR"
+    local banner_width=62
+    # Build a centered title surrounded by = characters
+    local padding
+    padding=$(( (banner_width - ${#title}) / 2 ))
+    local left_pad=""
+    local right_pad=""
+    local i
+    for (( i=0; i<padding; i++ )); do left_pad="${left_pad} "; done
+    for (( i=0; i<(( (banner_width - ${#title}) - padding )); i++ )); do right_pad="${right_pad} "; done
+
+    echo "=============================================================================="
+    echo "${BOLD}${left_pad}${title}${right_pad}${RESET}"
+    echo "=============================================================================="
+    echo
+    # Column header
+    printf "  %-4s %-36s  %s\n" "No." "Module / Option" "Current Status"
+    printf "  %-4s %-36s  %s\n" "----" "------------------------------------" "----------------"
+
+    local prev_cat=""
+    local num=0
+    local key
+    local cat
+    for key in "${MODULE_ORDER[@]}"; do
+        num=$(( num + 1 ))
+        cat="${MODULE_CATEGORY[$key]}"
+        # Print category header when category changes
+        if [ "$cat" != "$prev_cat" ]; then
+            echo
+            printf "  [ %s ]\n" "$cat"
+            prev_cat="$cat"
+        fi
+        local label="${MODULE_LABEL[$key]}"
+        local status
+        status="$(module_status_text "$key")"
+        printf "  %-4d %-36s  %s\n" "$num" "$label" "$status"
+    done
+
+    echo
+    echo "  Wallpaper values: 1 = 2560x1440  2 = 3440x1440  3 = Skip"
+    echo
+    echo "  Enter a number to toggle that module."
+    echo "  'run' or 'r' to execute selected modules."
+    echo "  'quit' or 'q' to abort."
+    echo
+}
+
+# ─────────────────────────────────────────────
+# SECTION: Interactive Menu Loop
+# ─────────────────────────────────────────────
+
+menu_loop() {
+    local input=""
+    local num
+    while true; do
+        render_menu
+        # Read from the controlling terminal, not stdin
+        read -r -p "set > " input < /dev/tty || return 0
+        # Strip carriage returns (Windows-style line endings)
+        input="${input//$'\r'/}"
+        # Trim leading and trailing whitespace
+        input="${input#"${input%%[![:space:]]*}"}"
+        input="${input%"${input##*[![:space:]]}"}"
+        # Case-insensitive
+        input="${input,,}"
+
+        case "$input" in
+            quit|q)
+                echo
+                log_info "Aborted. No changes made."
+                exit 0
+                ;;
+            run|r)
+                return 0
+                ;;
+            [0-9]*)
+                num="$input"
+                # Validate: must be a positive integer within range
+                if [ "$num" -ge 1 ] && [ "$num" -le "${#MODULE_ORDER[@]}" ] 2>/dev/null; then
+                    local idx=$(( num - 1 ))
+                    local key="${MODULE_ORDER[$idx]}"
+                    if [ "$key" = "wallpaper" ]; then
+                        # Sub-prompt for wallpaper multi-choice
+                        local wp_input=""
+                        echo -n "  Wallpaper (1=2560x1440, 2=3440x1440, 3=Skip) > "
+                        read -r -p "" wp_input < /dev/tty || continue
+                        wp_input="${wp_input//$'\r'/}"
+                        wp_input="${wp_input#"${wp_input%%[![:space:]]*}"}"
+                        wp_input="${wp_input%"${wp_input##*[![:space:]]}"}"
+                        case "$wp_input" in
+                            1|2|3) MODULE_STATE["wallpaper"]="$wp_input" ;;
+                            *) : ;;  # silently ignore invalid
+                        esac
+                    else
+                        # Toggle boolean
+                        if [ "${MODULE_STATE[$key]}" = "on" ]; then
+                            MODULE_STATE["$key"]="off"
+                        else
+                            MODULE_STATE["$key"]="on"
+                        fi
+                    fi
+                fi
+                # Out-of-range or non-numeric: silently ignore, redraw
+                ;;
+            *)
+                # Unrecognized text: silently ignore, redraw
+                ;;
+        esac
+    done
+}
+
+# ─────────────────────────────────────────────
+# SECTION: Module Implementation
+# ─────────────────────────────────────────────
+
+# --- RPM Fusion (lazy, idempotent) ---
+ensure_rpmfusion() {
+    if [ "$RPMFUSION_CONFIGURED" = "true" ]; then
+        return 0
+    fi
+    log_info "Configuring RPM Fusion repositories (Fedora ${FEDORA_VERSION})..."
+    local free_rpm="https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-${FEDORA_VERSION}.noarch.rpm"
+    local nonfree_rpm="https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-${FEDORA_VERSION}.noarch.rpm"
+    # dnf install of an already-installed RPM is a no-op (idempotent)
+    if ! sudo dnf install -y "$free_rpm" "$nonfree_rpm"; then
+        log_warning "RPM Fusion installation failed."
+        return 1
+    fi
+    RPMFUSION_CONFIGURED=true
+    log_success "RPM Fusion configured."
+}
+
+# --- Flatpak + Flathub (idempotent, shared by Prism & OrcaSlicer) ---
+ensure_flatpak_flathub() {
+    if ! command -v flatpak &>/dev/null; then
+        log_info "Installing Flatpak..."
+        sudo dnf install -y flatpak || return 1
+    fi
+    # --if-not-exists makes this idempotent on re-runs
+    flatpak remote-add --if-not-exists flathub "$FLATHUB_REMOTE_URL" || return 1
+}
+
+# --- 14. Remove KDE Bloat (runs first among package modules) ---
+module_bloat() {
+    local bloat_packages=(
+        kontact kmail korganizer akregator kaddressbook kcontacts
+        kaccounts-integration kaccounts-providers akonadi-server
+        akonadi-contacts akonadi-calendar kdepim-addons akonadiconsole
+        itinerary elisa-player dragon kamoso kate khelpcenter
+        kfind konqueror neochat kpatience kmines ksudoku
+        kinfocenter kpat kmahjongg
+    )
+    log_info "Removing KDE bloat packages..."
+
+    # Build a list of packages that are actually installed
+    local to_remove=()
+    local pkg
+    for pkg in "${bloat_packages[@]}"; do
+        if rpm -q "$pkg" &>/dev/null; then
+            to_remove+=("$pkg")
+        fi
+    done
+
+    if [ ${#to_remove[@]} -gt 0 ]; then
+        sudo dnf remove -y "${to_remove[@]}" || return 1
+    else
+        log_info "No bloat packages found installed; skipping."
+    fi
+
+    # Autoremove orphans
+    sudo dnf autoremove -y || return 1
+
+    # Remove leftover per-user config/data/cache entries (case-insensitive match)
+    local pattern
+    for pattern in kontact kmail akonadi korganizer elisa kaccounts neochat; do
+        local dir
+        for dir in "${HOME}/.config" "${HOME}/.local/share" "${HOME}/.cache"; do
+            # -I: case-insensitive match; -r: recursive (but we use find for safety)
+            local matches
+            matches="$(find "$dir" -maxdepth 1 -iname "${pattern}*" 2>/dev/null)" || continue
+            if [ -n "$matches" ]; then
+                # shellcheck disable=SC2086
+                rm -rf -- $matches 2>/dev/null || true
+            fi
+        done
+    done
+    log_success "KDE bloat removal complete."
+}
+
+# --- 4. Install Brave ---
+module_brave() {
+    log_info "Setting up Brave browser repository..."
+    # Ensure dnf can manage repositories (config-manager plugin)
+    # On dnf5 (Fedora 41+), config-manager ships with the base dnf package;
+    # we install the plugin package explicitly to satisfy the requirement.
+    sudo dnf install -y dnf5 2>/dev/null || true
+
+    # Download the official Brave .repo file and place it in the system repo dir
+    local repo_file="/tmp/brave-browser.repo"
+    if ! curl -fsSL -o "$repo_file" "$BRAVE_REPO_URL"; then
+        log_warning "Could not download Brave .repo file."
+        return 1
+    fi
+    sudo cp -f "$repo_file" /etc/yum.repos.d/brave-browser.repo
+    rm -f "$repo_file"
+
+    log_info "Installing Brave..."
+    if ! sudo dnf install -y brave-browser; then
+        log_warning "Brave installation failed."
+        return 1
+    fi
+    log_success "Brave installed."
+}
+
+# --- 5. Remove Firefox ---
+module_firefox() {
+    log_info "Removing Firefox..."
+    # Only proceed if Firefox is actually installed
+    if rpm -q firefox &>/dev/null; then
+        sudo dnf remove -y firefox || return 1
+    else
+        log_info "Firefox not installed; skipping."
+    fi
+    log_success "Firefox removal complete."
+}
+
+# --- 3. Install NVIDIA Drivers ---
+module_nvidia() {
+    ensure_rpmfusion || return 1
+    log_info "Installing NVIDIA kernel module and CUDA userspace driver..."
+    # kernel-modules-nvidia: pre-built kernel module for the current kernel
+    # cuda: CUDA userspace driver and runtime
+    sudo dnf install -y kernel-modules-nvidia cuda || return 1
+    log_success "NVIDIA drivers installed."
+}
+
+# --- 6. Install Steam ---
+module_steam() {
+    ensure_rpmfusion || return 1
+    log_info "Installing Steam..."
+    # Install Fedora third-party workstation repositories package
+    sudo dnf install -y fedora-workstation-repositories || {
+        log_warning "Could not install workstation repositories (continuing)."
+    }
+    # Enable the RPM Fusion nonfree repo (contains Steam)
+    sudo dnf config-manager --set-enabled=true rpmfusion-nonfree 2>/dev/null || true
+    sudo dnf install -y steam || return 1
+    log_success "Steam installed."
+}
+
+# --- 7. Install Prism Launcher ---
+module_prism() {
+    log_info "Installing Prism Launcher (Flatpak)..."
+    ensure_flatpak_flathub || return 1
+    sudo flatpak install -y --system flathub org.prismlauncher.PrismLauncher || return 1
+    log_success "Prism Launcher installed."
+}
+
+# --- 8. Install Jagex Launcher ---
+module_jagex() {
+    log_info "Installing Jagex Launcher (AppImage)..."
+    mkdir -p "$(dirname "$JAGEX_PATH")"
+    if ! curl -fsSL -o "$JAGEX_PATH" "$JAGEX_URL"; then
+        log_warning "Could not download Jagex Launcher AppImage."
+        return 1
+    fi
+    chmod +x "$JAGEX_PATH"
+
+    # Launch briefly in the background so it can register desktop integration
+    # (desktop file, icons, MIME types), then terminate gracefully.
+    "$JAGEX_PATH" > /dev/null 2>&1 &
+    local launcher_pid=$!
+    sleep 3
+    # Only signal if the process is still alive (it may have exited on its own)
+    if kill -0 "$launcher_pid" 2>/dev/null; then
+        kill -TERM "$launcher_pid" 2>/dev/null || true
+    fi
+    # Reap the child; suppress error if it already exited
+    wait "$launcher_pid" 2>/dev/null || true
+    log_success "Jagex Launcher installed."
+}
+
+# --- 9. Install Discord ---
+module_discord() {
+    ensure_rpmfusion || return 1
+    log_info "Installing Discord..."
+    sudo dnf install -y discord || return 1
+    log_success "Discord installed."
+}
+
+# --- 10. Install VLC ---
+module_vlc() {
+    ensure_rpmfusion || return 1
+    log_info "Installing VLC..."
+    sudo dnf install -y vlc || return 1
+    log_success "VLC installed."
+}
+
+# --- 11. Install Kdenlive ---
+module_kdenlive() {
+    log_info "Installing Kdenlive..."
+    sudo dnf install -y kdenlive || return 1
+    log_success "Kdenlive installed."
+}
+
+# --- 12. Replace KWrite with Sublime Text ---
+module_sublime() {
+    log_info "Installing Sublime Text (replacing KWrite)..."
+    # Remove KWrite first
+    if rpm -q kwrite &>/dev/null; then
+        sudo dnf remove -y kwrite || log_warning "KWrite removal had issues (continuing)."
+    fi
+    # Import Sublime HQ GPG signing key
+    sudo rpm --import "$SUBRIME_KEY_URL" || return 1
+    # Add the Sublime Text stable x86_64 repository
+    local repo_file="/tmp/sublime-text.repo"
+    if ! curl -fsSL -o "$repo_file" "$SUBRIME_REPO_URL"; then
+        log_warning "Could not download Sublime Text .repo file."
+        return 1
+    fi
+    sudo cp -f "$repo_file" /etc/yum.repos.d/sublime-text.repo
+    rm -f "$repo_file"
+    # Install Sublime Text
+    sudo dnf install -y sublime-text || return 1
+    log_success "Sublime Text installed."
+}
+
+# --- 13. Install OrcaSlicer ---
+module_orca() {
+    log_info "Installing OrcaSlicer (Flatpak)..."
+    ensure_flatpak_flathub || return 1
+    sudo flatpak install -y --system flathub com.orcaslicer.OrcaSlicer || return 1
+    log_success "OrcaSlicer installed."
+}
+
+# --- 1. Wallpaper Setup (runs after all package modules) ---
+module_wallpaper() {
+    local wp_val="${MODULE_STATE[wallpaper]}"
+    if [ "$wp_val" = "3" ]; then
+        log_info "Wallpaper module set to Skip; applying non-floating panels only."
+    else
+        log_info "Setting up wallpaper..."
+        mkdir -p "$WALLPAPER_DIR"
+        local filename=""
+        local url=""
+        case "$wp_val" in
+            1)
+                filename="$WALLPAPER_STANDARD"
+                url="${GITHUB_BASE}/${WALLPAPER_STANDARD}"
+                ;;
+            2)
+                filename="$WALLPAPER_ULTRAWIDE"
+                url="${GITHUB_BASE}/${WALLPAPER_ULTRAWIDE}"
+                ;;
+        esac
+
+        local dest="${WALLPAPER_DIR}/${filename}"
+        if ! curl -fsSL -o "$dest" "$url"; then
+            log_warning "Could not download wallpaper from $url"
+            return 1
+        fi
+        log_success "Wallpaper downloaded to ${dest}"
+
+        local file_url="file://${dest}"
+
+        # Apply desktop wallpaper on all desktops via D-Bus scripting of plasmashell
+        # qdbus6 is the Qt6 D-Bus command-line tool (Plasma 6)
+        qdbus6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript "
+            var img = '${file_url}';
+            for (var i = 0; i < desktops.length; ++i) {
+                desktops[i].configureWallpaper('org.kde.image', { 'ImagePath': img });
+            }
+        " > /dev/null 2>&1 || log_warning "D-Bus wallpaper set may have failed."
+
+        # Apply lock screen wallpaper via KDE 6 config tooling
+        kwriteconfig6 --file ksolrncrc --group General --key Wallpaper "$file_url" \
+            > /dev/null 2>&1 || log_warning "Lock screen wallpaper set may have failed."
+    fi
+
+    # Set both default panels to non-floating via D-Bus scripting
+    qdbus6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.evaluateScript "
+        var panels = panelManager.panels();
+        for (var i = 0; i < panels.length; ++i) {
+            panels[i].floating = false;
+            panels[i].saveConfiguration();
+        }
+    " > /dev/null 2>&1 || log_warning "Panel floating setting may have failed."
+
+    # Restart plasmashell so all changes appear immediately.
+    # The D-Bus restart method is asynchronous: the call returns immediately,
+    # and plasmashell restarts under the KDE session manager (not tied to our
+    # script's process tree). Output is suppressed.
+    qdbus6 org.kde.plasmashell /PlasmaShell org.kde.PlasmaShell.restart > /dev/null 2>&1 || true
+    sleep 2
+    log_success "Wallpaper module complete."
+}
+
+# --- 2. System Upgrade (runs last among package modules) ---
+module_upgrade() {
+    log_info "Running system upgrade..."
+    # --refresh: force metadata refresh
+    sudo dnf upgrade -y --refresh || return 1
+    # Remove orphaned dependencies
+    sudo dnf autoremove -y || return 1
+    log_success "System upgrade complete."
+}
+
+# ─────────────────────────────────────────────
+# SECTION: Execution Engine
+# ─────────────────────────────────────────────
+
+run_module() {
+    # $1 = module key
+    local key="$1"
+    # Dispatch to the appropriate function
+    case "$key" in
+        wallpaper) module_wallpaper ;;
+        upgrade)   module_upgrade ;;
+        nvidia)    module_nvidia ;;
+        brave)     module_brave ;;
+        firefox)   module_firefox ;;
+        steam)     module_steam ;;
+        prism)     module_prism ;;
+        jagex)     module_jagex ;;
+        discord)   module_discord ;;
+        vlc)       module_vlc ;;
+        kdenlive)  module_kdenlive ;;
+        sublime)   module_sublime ;;
+        orca)      module_orca ;;
+        bloat)     module_bloat ;;
+    esac
+    # If the function returned non-zero, record the failure
+    if [ $? -ne 0 ]; then
+        FAILED_MODULES["$key"]=1
+        log_warning "Module '${MODULE_LABEL[$key]}' completed with errors."
+    fi
+}
+
+execute_selected_modules() {
+    local key
+    local brave_failed=false
+    local brave_selected=false
+    local firefox_selected=false
+
+    # Determine if Brave and Firefox are selected
+    if [ "${MODULE_STATE[brave]}" = "on" ]; then
+        brave_selected=true
+    fi
+    if [ "${MODULE_STATE[firefox]}" = "on" ]; then
+        firefox_selected=true
+    fi
+
+    echo
+    echo "==============================================================="
+    echo "  EXECUTING SELECTED MODULES"
+    echo "==============================================================="
+    echo
+
+    # --- 1. Debloat (first among package-affecting modules) ---
+    if [ "${MODULE_STATE[bloat]}" = "on" ]; then
+        run_module "bloat"
+    fi
+
+    # --- 2. Browsers: Brave before Firefox ---
+    if [ "$brave_selected" = true ]; then
+        run_module "brave"
+        # Check if brave module failed
+        if [ -n "${FAILED_MODULES[brave]:-}" ]; then
+            brave_failed=true
+        fi
+    fi
+    if [ "$firefox_selected" = true ]; then
+        # Do not remove Firefox if Brave was selected AND failed
+        if [ "$brave_selected" = true ] && [ "$brave_failed" = true ]; then
+            log_info "Brave install failed; skipping Firefox removal to preserve a browser."
+        else
+            run_module "firefox"
+        fi
+    fi
+
+    # --- 3. NVIDIA ---
+    if [ "${MODULE_STATE[nvidia]}" = "on" ]; then
+        run_module "nvidia"
+    fi
+
+    # --- 4. Gaming ---
+    if [ "${MODULE_STATE[steam]}" = "on" ]; then
+        run_module "steam"
+    fi
+    if [ "${MODULE_STATE[prism]}" = "on" ]; then
+        run_module "prism"
+    fi
+    if [ "${MODULE_STATE[jagex]}" = "on" ]; then
+        run_module "jagex"
+    fi
+
+    # --- 5. Communication / Media / Productivity ---
+    if [ "${MODULE_STATE[discord]}" = "on" ]; then
+        run_module "discord"
+    fi
+    if [ "${MODULE_STATE[vlc]}" = "on" ]; then
+        run_module "vlc"
+    fi
+    if [ "${MODULE_STATE[kdenlive]}" = "on" ]; then
+        run_module "kdenlive"
+    fi
+    if [ "${MODULE_STATE[sublime]}" = "on" ]; then
+        run_module "sublime"
+    fi
+    if [ "${MODULE_STATE[orca]}" = "on" ]; then
+        run_module "orca"
+    fi
+
+    # --- 6. Wallpaper (after all package modules) ---
+    if [ "${MODULE_STATE[wallpaper]}" != "3" ] || [ "${MODULE_STATE[wallpaper]}" = "1" ]; then
+        # Always run wallpaper module if value is 1 or 2 (not 3 = Skip)
+        if [ "${MODULE_STATE[wallpaper]}" = "1" ] || [ "${MODULE_STATE[wallpaper]}" = "2" ]; then
+            run_module "wallpaper"
+        elif [ "${MODULE_STATE[wallpaper]}" = "3" ]; then
+            # Even when skipping download, apply non-floating panels
+            run_module "wallpaper"
+        fi
+    fi
+
+    # --- 7. System Upgrade (last package-affecting module) ---
+    if [ "${MODULE_STATE[upgrade]}" = "on" ]; then
+        run_module "upgrade"
+    fi
+}
+
+# ─────────────────────────────────────────────
+# SECTION: Failure Summary
+# ─────────────────────────────────────────────
+
+print_failure_summary() {
+    if [ ${#FAILED_MODULES[@]} -eq 0 ]; then
+        return 0
+    fi
+    echo
+    echo "==============================================================="
+    log_warning "The following modules completed with errors:"
+    local key
+    for key in "${!FAILED_MODULES[@]}"; do
+        printf "  - %s\n" "${MODULE_LABEL[$key]}"
+    done
+    echo "==============================================================="
+}
+
+# ─────────────────────────────────────────────
+# SECTION: Reboot & Cleanup
+# ─────────────────────────────────────────────
+
+wait_for_package_managers() {
+    # Wait until no dnf or akmods process is still running
+    # (NVIDIA kernel module may still be building in the background)
+    local waited=0
+    while pgrep -x dnf &>/dev/null || pgrep -x akmods &>/dev/null; do
+        log_warning "Waiting for dnf/akmods to finish... (${waited}s)"
+        sleep 5
+        waited=$(( waited + 5 ))
+    done
+    if [ "$waited" -gt 0 ]; then
+        log_info "Package managers finished after ${waited}s."
+    fi
+}
+
+self_delete() {
+    # Delete the script file from the current directory.
+    # Use -- to handle a leading dash in the path safely.
+    # Resolve to an absolute path first for safety.
+    local script_abs
+    script_abs="$(cd "$(dirname -- "$SCRIPT_PATH")" 2>/dev/null && pwd)/$(basename -- "$SCRIPT_PATH")"
+    # Fallback: if the resolved path still points to a file, remove it
+    if [ -f "$script_abs" ]; then
+        rm -f -- "$script_abs" 2>/dev/null || true
+    else
+        # Final fallback: the script was downloaded as postinstall.sh in CWD
+        rm -f -- "./${SCRIPT_NAME}" 2>/dev/null || true
+    fi
+}
+
+reboot_prompt() {
+    local answer=""
+    echo
+    echo "==============================================================="
+    echo "${BOLD}${GREEN}  POST-INSTALLATION COMPLETE${RESET}"
+    echo "==============================================================="
+    echo
+
+    print_failure_summary
+
+    echo
+    # Read from /dev/tty
+    read -r -p "Would you like to restart your system now? [Y/n] " answer < /dev/tty || answer=""
+    answer="${answer//$'\r'/}"
+    answer="${answer#"${answer%%[![:space:]]*}"}"
+    answer="${answer%"${answer##*[![:space:]]}"}"
+    answer="${answer,,}"
+
+    local do_reboot=false
+    case "$answer" in
+        ""|y|yes|1) do_reboot=true ;;
+    esac
+
+    if [ "$do_reboot" = true ]; then
+        wait_for_package_managers
+        echo
+        log_info "Rebooting now..."
+        sudo reboot
+    else
+        echo
+        log_info "Please reboot manually when convenient."
+        if [ "${MODULE_STATE[nvidia]}" = "on" ]; then
+            log_warning "NVIDIA drivers were installed — a reboot is required for the kernel module to load."
+        fi
+    fi
+
+    # Self-delete in both branches
+    self_delete
+}
+
+# ─────────────────────────────────────────────
+# SECTION: Main
+# ─────────────────────────────────────────────
+
+main() {
+    # Refuse to run as root
+    if [ "$(id -u)" -eq 0 ]; then
+        echo "ERROR: This script must be run as a normal (non-root) user."
+        echo "       It configures user-scoped settings in your home directory."
+        echo "       Run it with:  bash ${SCRIPT_NAME}"
+        exit 1
+    fi
+
+    # Basic sanity: verify we have a Fedora system
+    if ! grep -q "Fedora" /etc/os-release 2>/dev/null; then
+        log_warning "This script is designed for Fedora KDE Plasma 6."
+        log_warning "Detected OS: $(. /etc/os-release; echo "${NAME:-unknown}")"
+        echo "Press Enter to continue or Ctrl+C to abort..."
+        read -r -p "" _ < /dev/tty || exit 0
+    fi
+
+    log_info "Fedora version: ${FEDORA_VERSION}"
+    log_info "User: ${USER}  Home: ${HOME}"
+    echo
+
+    # Interactive menu
+    menu_loop
+    local menu_rc=$?
+    if [ "$menu_rc" -ne 0 ]; then
+        exit 0
+    fi
+
+    # Acquire sudo credential (asked exactly once)
+    acquire_sudo || exit 1
+    echo
+
+    # Execute selected modules in the correct order
+    execute_selected_modules
+
+    # Post-run
+    reboot_prompt
+}
+
+main
