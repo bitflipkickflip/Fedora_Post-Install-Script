@@ -1,9 +1,9 @@
-// llama-server   -hf huihui-ai/Huihui-Qwen3.8-27B-abliterated-GGUF:UD-Q3_K_XL   --no-mmproj   -fa on   --cache-type-k q8_0   --cache-type-v q8_0   --chat-template-kwargs '{"reasoning_effort":"medium"}'   --ctx-size 32768   --n-gpu-layers 90   --port 8080 &
-// huihui-ai/Huihui-Qwen3.8 27B  UD-Q3_K_XL abliterated 21,077 tokens 12min 11s 28.81 t/s 
-
 #!/bin/bash
 #
 # postinstall.sh — Fedora KDE Plasma 6 Post-Installation Configurator
+#
+#// llama-server   -hf huihui-ai/Huihui-Qwen3.8-27B-abliterated-GGUF:UD-Q3_K_XL   --no-mmproj   -fa on   --cache-type-k q8_0   --cache-type-v q8_0   --chat-template-kwargs '{"reasoning_effort":"medium"}'   --ctx-size 32768   --n-gpu-layers 90   --port 8080 &
+#// huihui-ai/Huihui-Qwen3.8 27B  UD-Q3_K_XL abliterated 21,077 tokens 12min 11s 28.81 t/s 
 #
 # Usage (from a fresh install, as a normal user):
 #   curl -sO https://raw.githubusercontent.com/bitflipkickflip/fedora_postinstall/main/postinstall.sh && bash postinstall.sh
